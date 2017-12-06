@@ -14,7 +14,7 @@ Java JRE 1.7 (or later) https://java.com/en/
 ### Installing
 
 #### Application Install
-Download and run AppWatch.exe
+Download and run [AppWatch.exe](https://github.com/harropda/AppWatch/blob/master/AppWatch/AppWatch.exe)
 
 #### Development Download
 Clone the Appwatch/src/appwatch directory.
