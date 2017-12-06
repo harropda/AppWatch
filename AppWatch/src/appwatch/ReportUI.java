@@ -18,6 +18,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.logging.Level;
@@ -35,54 +36,67 @@ import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 
 /**
- *
+ * The Report Display page - used to interact with the report in the UI (as
+ opposed to ReportClass which interacts with report in the back-end
+ Displays report content, triggers vulnerability scans and opens the 
+ Application Details page.
+ * 
  * @author David Harrop
  */
-public class reportUI extends javax.swing.JDialog {
-    reportClass rep;
-    powerShellClass ps;
-    hashListClass hash;
+public class ReportUI extends javax.swing.JDialog {
+    ReportClass rep;
+    PowerShellClass ps;
+    HashListClass hash;
     private final String filename;
     private final File xml;
     private final String date;
     public final String reportID;
-    applicationUI appUI;
+    ApplicationUI appUI;
 
     /**
      * This is the author's free API key for Shodan, that will allow us to perform
      * GET requests to multiple Exploit databases.
+     * This value is in plain text in code as it is a free API key - anyone can
+     * get one.  If this utility was to be commercialised this API key would
+     * need to be secured via encryption.
+     * 
      */
     public static final String apiKey = "bfjsR7ng6kijWAl4Z0S5V0j5HEDswx1O";
     
     /**
      * Creates new form reportUI
-     * @param parent
-     * @param modal
-     * @param rID
+     * @param parent the calling Dialog to be displayed in front of
+     * @param modal the flag that determines 'in front of'
+     * @param rID the report UNID
      * @throws org.xml.sax.SAXException
+     *  Catches errors in parsing the XML file
      * @throws java.io.IOException
+     *  Catches any errors in interacting with the file system
      * @throws javax.xml.parsers.ParserConfigurationException
+     *  Catches any errors in reading the parsed XML file
      */
     @SuppressWarnings("OverridableMethodCallInConstructor")
-    public reportUI(java.awt.Frame parent, boolean modal, String rID) throws SAXException, IOException, ParserConfigurationException {
+    public ReportUI(java.awt.Frame parent, boolean modal, String rID) throws SAXException, IOException, ParserConfigurationException {
         super(parent, modal);
         initComponents();  
-        setLocationRelativeTo(null);
+        setLocationRelativeTo(null); //central position
+        //instantiate our classes and set variables
         Long lastMod;
         Date rDt; 
         boolean scanDone = false;
-        ps = new powerShellClass();
-        rep = new reportClass();
+        ps = new PowerShellClass();
+        rep = new ReportClass();
         this.reportID = rID;
         repID.setText(rID);
         this.filename = ps.homeDir() + File.separator + "AppWatch" + File.separator + reportID + ".xml";
         this.xml = new File(filename);
         
         //We have the report id, now retrieve the date and number of applications from it
+        //display those values in UI
         repNumApps.setText(rep.readReport(xml, "app_Count"));
         vulFound.setText(rep.readReport(xml, "vul_Count"));
         if (rep.readReport(xml, "report_Stage").equals("Vulnerability Scan")) {
-            //scan done, just permit read
+            //scan already done, just permit read
             scanDone = true;
             jMenuItem1.setEnabled(false);
         }
@@ -93,6 +107,10 @@ public class reportUI extends javax.swing.JDialog {
         populateTable();
     }
 
+    /**
+     * Called upon class instantiation.  Retrieves values from the selected report
+     * file and displays them in the UI.
+     */
     private void populateTable() {
         String appID;
         String appName;
@@ -102,9 +120,9 @@ public class reportUI extends javax.swing.JDialog {
         Integer count = 0;
         DefaultTableModel model = (DefaultTableModel) appTable.getModel();
         model.setRowCount(0);
-        //traverse the xml file to retrieve the application informationand output it to the table
+        //traverse the xml file to retrieve the application information 
+        //and output it to the table
         try {
-
             DocumentBuilderFactory dBF = DocumentBuilderFactory.newInstance();
             DocumentBuilder dB = dBF.newDocumentBuilder();
             Document doc = dB.parse(xml);
@@ -122,7 +140,6 @@ public class reportUI extends javax.swing.JDialog {
                     Element e = (Element)node;
                     NodeList childNodeList = e.getChildNodes();
                     if (childNodeList.getLength() > 0) {
-                        //Node childNode = childNodeList.item(1);
                         for (int j = 0 ; j < childNodeList.getLength() ; j++) {
                            Node childNode = childNodeList.item(j);
                            if (childNode.getNodeType() == Node.ELEMENT_NODE) {
@@ -153,30 +170,29 @@ public class reportUI extends javax.swing.JDialog {
                             }
                         }
                     }
-                    count++;        
-                    
+                    count++;                          
+                    //if the report contains a node with a blank application name
+                    //we aren't going to display it. This can happen with PowerShell
                     if (!"".equals(appName)) {
                         Object[] row = {appID, appName, appVersion, appPublisher, appVulCount};
                        model.addRow(row); 
                     } 
-                    model.fireTableDataChanged();
-                    vulFound.setText(rep.readReport(xml, "vul_Count"));
+                    model.fireTableDataChanged();                    
                 }
             }            
         } catch (ParserConfigurationException | SAXException | IOException ex) {
-            Logger.getLogger(reportUI.class.getName()).log(Level.SEVERE, null, ex);
-        }                 
+            Logger.getLogger(ReportUI.class.getName()).log(Level.SEVERE, null, ex);
+        }          
+        //update the UI with aggregate data from report
+        try {
+            vulFound.setText(rep.readReport(xml, "vul_Count"));
+        } catch (SAXException | IOException ex) {
+            Logger.getLogger(ReportUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
         //Sort by application name
         TableRowSorter<TableModel> sorter = new TableRowSorter<>(appTable.getModel());
         appTable.setRowSorter(sorter);
-
-        /*
-        List<RowSorter.SortKey> sortKeys = new ArrayList<>();
-        sortKeys.add(new RowSorter.SortKey(0, SortOrder.ASCENDING));
-        sorter.setSortKeys(sortKeys);
-        */
-
-        //Set the Vulnerabilities column to be widest
+        //Set column widths to suit content
         TableColumn column;
         for (int i = 0; i < 4; i++) {
             column = appTable.getColumnModel().getColumn(i);
@@ -362,6 +378,11 @@ public class reportUI extends javax.swing.JDialog {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    /**
+     * Double-clicking any row opens the Application Details page relevant to 
+     * the application at the selected row
+     * @param evt 
+     */
     private void appTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_appTableMouseClicked
         String appID;
         String appName;
@@ -378,26 +399,30 @@ public class reportUI extends javax.swing.JDialog {
                 // a row without a Report ID value has been clicked, can't do anything
                 JOptionPane.showMessageDialog(null, "Invalid selection", "WARNING!", JOptionPane.WARNING_MESSAGE);
             } else {
-                    appUI = new applicationUI(new javax.swing.JFrame(), true, xml, appID, appName, appVersion, date);
+                    appUI = new ApplicationUI(new javax.swing.JFrame(), true, xml, appID, appName, appVersion, date);
                     appUI.setVisible(true);
             }
         }
         
     }//GEN-LAST:event_appTableMouseClicked
 
+    /**
+     * Performs a Vulnerability scan for each application listed in the table.
+     * Application Name & Version are parsed into a query URL, which is fired
+     * as a HTTPS GET request to Shodan.  Return is in JSON format, which must 
+     * be parsed into the report file.
+     * @param evt 
+     */
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
-        /* Traverse the table, retrieving the Application Name and Version
-        * For each row, fire a HTTPS GET request to Shodan and interpret the 
-        * results into the XML file, then refresh the table.
-        */
+        //Set variables and instantiate support classes
         String baseURL = "https://exploits.shodan.io/api/search?query=";
         String keyURL = "&key=" + apiKey;
         String charset = "UTF-8";
         String product;
         String version;
         String appID;
-        //String querytype = "type:\"exploit\"";
-        String platform = "platform:\"windows\"";
+        String platform = "platform:\"windows\""; //Not interested in exploits
+        //for other OS at this time.
         String query;
         String source;
         String cve;
@@ -409,87 +434,110 @@ public class reportUI extends javax.swing.JDialog {
         URL url;
         Integer totalVuls = 0;
         InputStream response;
-        rep = new reportClass();
-        hash = new hashListClass();  
+        rep = new ReportClass();
+        hash = new HashListClass();  
          
         DefaultTableModel model = (DefaultTableModel) appTable.getModel();
         Integer lastrow = model.getRowCount();
         //open the XML file for read/edit
-        DocumentBuilderFactory dBF = DocumentBuilderFactory.newInstance();
+        /*DocumentBuilderFactory dBF = DocumentBuilderFactory.newInstance();
         DocumentBuilder dB;
         try {
             dB = dBF.newDocumentBuilder();
             Document doc = dB.parse(new File(filename));
             NodeList nodeList = doc.getElementsByTagName("Object");
         } catch (ParserConfigurationException | SAXException | IOException ex) {
-            Logger.getLogger(reportUI.class.getName()).log(Level.SEVERE, null, ex);
-        }            
+            Logger.getLogger(ReportUI.class.getName()).log(Level.SEVERE, null, ex);
+        }  */          
         
-        //for (int r = 0 ; r < lastrow ; r++) {
-        for (int r = 0 ; r < 1 ; r++) {
-            model.setValueAt("searching...", r, 4);
+        status.setText("searching...");
+        for (int r = 0 ; r < lastrow ; r++) {
+        //for (int r = 0 ; r < 1 ; r++) {
+            
             model.fireTableDataChanged();
             appTable.updateUI();
             appID = model.getValueAt(r, 0).toString();
             product = model.getValueAt(r, 1).toString();
             version = model.getValueAt(r, 2).toString();
-            status.setText("processing " + product + " " + version);
-            
-                       
+            status.setText("searching.");
+                                   
             try {   
+                //Seems like the free Shoden API is throttled - without a sleep
+                //the second GET request returns 503 error.
                 sleep(1000);
-                //product = product.replace("-", "");
-                //version = version.replace("-", "");
-                product = "Microsoft SQL Server";
-                version = "2000";
-                System.out.println("Searching vulnerabiiities for " + product + " " + version);
+                product = product.replace("-", "");
+                version = version.replace("-", "");
+                //product = "FTP Explorer"; //for testing only - delete
+                product = product.replace("[", "");
+                product = product.replace("]", "");
+                //version = ""; //for testing only - delete
+                System.out.println("Searching vulnerabilities for " + product + " " + version);
+                //create the query string
                 query = URLEncoder.encode(product, charset) + "+" 
                         + URLEncoder.encode(version, charset) + "+" 
                         //+ URLEncoder.encode(querytype, charset) + "+" 
                         + URLEncoder.encode(platform, charset);
-                url = new URL(baseURL + query + keyURL);                
+                url = new URL(baseURL + query + keyURL);      
+                //open the connection
                 connection = (HttpURLConnection)url.openConnection();
                 System.out.println("HTTP Response Code: " + connection.getResponseCode());
+                //read the response to GET request
                 response = connection.getInputStream();
                 
                 //JSON parsing
                 BufferedReader buffer = new BufferedReader(new InputStreamReader(response));
-                JSONObject jsonObject = (JSONObject) JSONValue.parse(buffer);                
-		// get the data
-		JSONArray genreArray = (JSONArray) jsonObject.get("matches");
-		// get the first genre
-                System.out.println("genreArray.size();" + genreArray.size());
-                totalVuls = totalVuls + genreArray.size();
-                int i;
-                for (i = 0 ; i < genreArray.size() ; i++) {
-                    JSONObject firstGenre = (JSONObject) genreArray.get(i);
-                    if (firstGenre.containsKey("source")) {
-                        source = firstGenre.get("source").toString();
-                    } else {
-                        source = "";
+                // get the data
+                JSONObject jsonObject = (JSONObject) JSONValue.parse(buffer);
+                System.out.println("jsonObject.toString()= " + jsonObject.toString());
+                if (!jsonObject.toString().contains("error")) {
+                    
+                    // get the first array of values
+                    JSONArray arraySet = (JSONArray) jsonObject.get("matches");
+                    System.out.println("Found: " + arraySet.size());
+                    totalVuls = totalVuls + arraySet.size();
+                    int i;
+                    status.setText("searching..");
+                    //we don't want every value from each array, just some key ones.
+                    //traverse the each array in the set, retreiving only the desired
+                    // values
+                    for (i = 0 ; i < arraySet.size() ; i++) {
+                        JSONObject array = (JSONObject) arraySet.get(i);
+                        if (array.containsKey("source")) {
+                            source = array.get("source").toString();
+                        } else {
+                            source = "";
+                        }
+                        if (array.containsKey("cve")) {
+                            cve = array.get("cve").toString();
+                        } else {
+                            cve = "";
+                        }
+                        if (array.containsKey("description")) {
+                            description = array.get("description").toString();
+                        } else {
+                            description = "";
+                        }
+                        rep.addVResult(filename, i, appID, cve, description, source, arraySet.size());
+                        populateTable();
                     }
-                    if (firstGenre.containsKey("cve")) {
-                        cve = firstGenre.get("cve").toString();
-                    } else {
-                        cve = "";
-                    }
-                    if (firstGenre.containsKey("description")) {
-                        description = firstGenre.get("description").toString();
-                    } else {
-                        description = "";
-                    }
-                    rep.addVResult(filename, i, appID, cve, description, source, genreArray.size());
+                } else {
+                    rep.addVResult(filename, 0, appID, "Error", "query error", "Error", 0);
                     populateTable();
                 }
+            } catch (UnknownHostException ex) {
+                JOptionPane.showMessageDialog(null, "Seems like you don't have an internet connection or Shodan is down"
+                                    , "Connection Error", JOptionPane.WARNING_MESSAGE);
+                break;
             } catch (UnsupportedEncodingException ex) {
-                Logger.getLogger(reportUI.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ReportUI.class.getName()).log(Level.SEVERE, null, ex);
             } catch (MalformedURLException | InterruptedException ex) {
-                Logger.getLogger(reportUI.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ReportUI.class.getName()).log(Level.SEVERE, null, ex);
             } catch (IOException ex) {
-                Logger.getLogger(reportUI.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ReportUI.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        
+        //update the report file with new status and the aggregate data from our query
+        //finally update the stored hash value for the report.
         try {
             rep.insertXML(totalVuls.toString(), "vul_Count", filename);
             rep.insertXML("Vulnerability Scan", "report_Stage", filename);
@@ -497,9 +545,11 @@ public class reportUI extends javax.swing.JDialog {
             rID = rep.getUNIDFromFile(filename);
             hash.setHash(rID, md5Hash);
         } catch (IOException | NoSuchAlgorithmException | SAXException ex) {
-            Logger.getLogger(reportUI.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ReportUI.class.getName()).log(Level.SEVERE, null, ex);
         }  
-        
+        status.setText("Scan complete");
+        vulFound.setText(totalVuls.toString());
+        populateTable();
         JOptionPane.showMessageDialog(null, "Finished searching for vulnerabilities for " + lastrow + " applications."
                                     , "Scan status", JOptionPane.INFORMATION_MESSAGE);
     }//GEN-LAST:event_jMenuItem1ActionPerformed
@@ -521,8 +571,9 @@ public class reportUI extends javax.swing.JDialog {
                 }
             }
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
-            Logger.getLogger(reportUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            Logger.getLogger(ReportUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
+        //</editor-fold>
         //</editor-fold>
         
         //</editor-fold>
@@ -532,11 +583,11 @@ public class reportUI extends javax.swing.JDialog {
             @Override
             @SuppressWarnings("null")
             public void run() {
-                reportUI dialog = null;
+                ReportUI dialog = null;
                 try {
-                    dialog = new reportUI(new javax.swing.JFrame(), true, "");
+                    dialog = new ReportUI(new javax.swing.JFrame(), true, "");
                 } catch (SAXException | IOException | ParserConfigurationException ex) {
-                    Logger.getLogger(reportUI.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(ReportUI.class.getName()).log(Level.SEVERE, null, ex);
                 }
                 dialog.addWindowListener(new java.awt.event.WindowAdapter() {
                     @Override

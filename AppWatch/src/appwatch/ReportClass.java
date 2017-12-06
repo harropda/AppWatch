@@ -26,11 +26,11 @@ import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 
 /**
- *
+ * Class used to interact with a report file in the back-end and not in the UI
  * @author David Harrop
  */
-public class reportClass {
-    hashListClass hash;
+public class ReportClass {
+    HashListClass hash;
     String rID; 
     
     public static void main(String[] args) {
@@ -49,10 +49,19 @@ public class reportClass {
            this.rID = user.substring(0, 2) + String.valueOf(time);
     }
     
+    /**
+     * return the report UNID to the caller
+     * @return report UNID
+     */
     public String getReportID() {
         return this.rID;
     }
     
+    /**
+     * Given a report file, extract its UNID from it
+     * @param filename the file from which to extract the UNID
+     * @return the UNID of the report file
+     */
     public String getUNIDFromFile(String filename) {
         char c;
         StringBuilder sb = new StringBuilder();
@@ -66,12 +75,15 @@ public class reportClass {
     }
     
     /**
-     *
+     * Given a report file and tag name, search for the tag and return the 
+     * associated value.
      * @param xml the report file from which we wish to read something
      * @param tag the XML tag value we wish to read from the report
-     * @return tagVal the report id value from the report file
+     * @return tagVal the value from the specified tag in the report file
      * @throws org.xml.sax.SAXException
+     *  Catches parsing errors on XML file
      * @throws java.io.IOException
+     *  Catches any errors during file system interaction
      */
     public String readReport(File xml, String tag) throws SAXException, IOException {
         String tagVal = "";
@@ -84,26 +96,28 @@ public class reportClass {
             // create instance of DOM
             Document doc;
             doc = db.parse(xml);
-            //e = doc.getDocumentElement();
             nl = doc.getElementsByTagName(tag);
             if (nl.getLength() > 0 && nl.item(0).hasChildNodes()) {
                 tagVal = nl.item(0).getFirstChild().getNodeValue();
             }
         } catch (ParserConfigurationException | SAXException | IOException ex) {
-            Logger.getLogger(reportClass.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ReportClass.class.getName()).log(Level.SEVERE, null, ex);
         }
         return tagVal;
     }  
     
     /**
-     * After a new XML report of installed apps is created, we wish to add the 
-     * report UNID to the file.
+     * Credit: https://stackoverflow.com/questions/7373567/how-to-read-and-write-xml-files
+     * Given a report file, a tag name and a value, search the file for the tag.
+     * if found, update the value, otherwise create a new tag and add the value 
+     * to it.
      * @param val the value of the XML tag to be added to the report
      * @param tag the XML Tag to be updated with val
      * @param xml the report file
-     * source: https://stackoverflow.com/questions/7373567/how-to-read-and-write-xml-files
      * @throws java.io.IOException
+     *  Catches any errors interacting with the file system
      * @throws org.xml.sax.SAXException
+     *  Catches any parsing errors with the XML file
      * 
      */
     public void insertXML(String val, String tag, String xml) throws IOException, SAXException {
@@ -137,7 +151,6 @@ public class reportClass {
                 System.out.println("adding tag");
                 e = doc.createElement(tag);
                 e.appendChild(doc.createTextNode(val));
-                //rootEle.appendChild(e);
                 rootEle.appendChild(e);
             } 
             
@@ -145,28 +158,29 @@ public class reportClass {
             tr.setOutputProperty(OutputKeys.INDENT, "yes");
             tr.setOutputProperty(OutputKeys.METHOD, "xml");
             tr.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-            //tr.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, cat + ".dtd");
             tr.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
 
-            // send DOM to file
+            // save the updates to the file
             tr.transform(new DOMSource(doc), new StreamResult(new FileOutputStream(xml)));
-
             
         } catch (ParserConfigurationException | TransformerException ex) {
-            Logger.getLogger(reportClass.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ReportClass.class.getName()).log(Level.SEVERE, null, ex);
         }        
     }  
     
     /**
-     *
-     * @param rID
-     * @param hashVal
-     * @return 
+     * Given a report UNID and the current md5hash value of the report, locate
+     * the stored hash value for the report in the Hash File and compare stored
+     * vs current.
+     * @param rID the UNID of the report
+     * @param hashVal The expected md5 hash value of the report
+     * @return true or false, do the stored and current hash values match
      * @throws java.io.IOException 
+     *  Catches any errors interacting with the file system
      */
     public boolean validateHash(String rID, String hashVal) throws IOException {
         boolean returnCode;
-        hash = new hashListClass();
+        hash = new HashListClass();
         String storedHash = hash.retrieveHash(rID);
         System.out.println("storedhash = " + storedHash);
         System.out.println("hashVal = " + hashVal);
@@ -175,14 +189,15 @@ public class reportClass {
     }    
     
     /**
+     * Credit: https://howtodoinjava.com/core-java/io/how-to-generate-sha-or-md5-file-checksum-hash-in-java/
      * For a given file, retrieve and return the MD5 Hash value (MD5 method 
      * specified by the MessageDigest parameter)
-     *
-     * Credit: https://howtodoinjava.com/core-java/io/how-to-generate-sha-or-md5-file-checksum-hash-in-java/
-     * @param file
-     * @return 
+     * @param file the file we wish to derive the current md5 hash value for.
+     * @return current md5 hash value of file
      * @throws java.io.IOException
+     *  Catches any errors interacting with the file system
      * @throws java.security.NoSuchAlgorithmException
+     *  Catches an error caused by reading the digest
      */
     public String getHash (File file) throws IOException, NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("MD5"); 
@@ -214,23 +229,32 @@ public class reportClass {
        return sb.toString();
     }  
     
-    /*
-    * Once the user has selected a report from the presented list of reports on the home page
-    * we must then open that report.  This requires:
-    * The report UNID
-    * Validating the report file Hash value against the Hash List
-    */
+    /**
+     * Once the user has selected a report from the presented list of reports on 
+     * the home page, we must then open that report.  First, we validate the reports
+     * current md5 hash value against the stored hash value.  
+     * @param rID the report UNID
+     * @throws ParserConfigurationException 
+     *  Catches errors caused during report read
+     */
+    
     @SuppressWarnings("null")
     public void openReport (String rID) throws ParserConfigurationException{
-       reportUI repUI = null;
+       ReportUI repUI = null;
         try {
-            repUI = new reportUI(new javax.swing.JFrame(), true, rID);
+            repUI = new ReportUI(new javax.swing.JFrame(), true, rID);
         } catch (SAXException | IOException ex) {
-            Logger.getLogger(reportClass.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ReportClass.class.getName()).log(Level.SEVERE, null, ex);
         }
        repUI.setVisible(true);
     }
     
+    /**
+     * Count how many applications were identified in the report - this also counts
+     * blank values
+     * @param xml the report file
+     * @return the number of applications in the report file
+     */
     public Integer countApps(String xml) {
         Integer count = 0;
         
@@ -238,18 +262,20 @@ public class reportClass {
 		DocumentBuilderFactory dBF = DocumentBuilderFactory.newInstance();
 		DocumentBuilder dB = dBF.newDocumentBuilder();
 		Document doc = dB.parse(xml);
-
 		NodeList list = doc.getElementsByTagName("Object");
-
 		count = list.getLength();
-
 	} catch (ParserConfigurationException | IOException | SAXException ex) {
-		Logger.getLogger(reportClass.class.getName()).log(Level.SEVERE, null, ex);
-	}
-        
+		Logger.getLogger(ReportClass.class.getName()).log(Level.SEVERE, null, ex);
+	}        
         return count;
     } 
     
+    /**
+     * In order to make future read/edit of the report simpler we add a UNID to each
+     * application in the report.  The UNID is a simple index as it is only used
+     * within the context of the report and not beyond.
+     * @param xml the report file to be updated
+     */
     public void addAppUNIDS(String xml) {
         
         try {
@@ -264,7 +290,7 @@ public class reportClass {
                 Node node = nodeList.item(i);
                 Integer newIDint = i + 1;
                 String newID = newIDint.toString();
-                if (node.getNodeType() == Node.ELEMENT_NODE) {
+                if (node.getNodeType() == Node.ELEMENT_NODE) {  //only update non-white space nodes
                     Element e = (Element)node;
                     NodeList childNodeList = e.getChildNodes();
                     if (childNodeList.getLength() > 0) {
@@ -280,17 +306,28 @@ public class reportClass {
             tr.setOutputProperty(OutputKeys.INDENT, "yes");
             tr.setOutputProperty(OutputKeys.METHOD, "xml");
             tr.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-            //tr.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, cat + ".dtd");
             tr.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
 
-            // send DOM to file
+            // save changes to the file
             tr.transform(new DOMSource(doc), new StreamResult(new FileOutputStream(xml)));
         } catch (SAXException | IOException | ParserConfigurationException | TransformerException ex) {
-            Logger.getLogger(reportClass.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
+            Logger.getLogger(ReportClass.class.getName()).log(Level.SEVERE, null, ex);
+        }        
     }
     
+    /**
+     * When performing a Vulnerability scan we must update the report with the results.
+     * A single application can have many vulnerabilities, so we need track the
+     * vulnerability index number per application as well as the application
+     * index number.
+     * @param filename the report file and path
+     * @param sequence the vulnerability index number
+     * @param appID the application index number
+     * @param cve the CVE ID of the vulnerability
+     * @param description the full text description of the vulnerability
+     * @param source the source of the vulnerability information
+     * @param appVulCount the total number of vulnerabilities for the application
+     */
     public void addVResult(String filename, Integer sequence, String appID, String cve, String description, String source, Integer appVulCount) {
         String cveURL = generateCVEURL(cve);
         try {
@@ -301,18 +338,18 @@ public class reportClass {
             
             NodeList nodeList = doc.getElementsByTagName("Object");
             
-            for (int i = 0; i < nodeList.getLength(); i++) {
+            for (int i = 0; i < nodeList.getLength(); i++) { //top level
                Node node = nodeList.item(i);
-                if (node.getNodeType() == Node.ELEMENT_NODE) {
+                if (node.getNodeType() == Node.ELEMENT_NODE) { //ignore white space
                     Element e = (Element)node;
                     NodeList childNodeList = e.getChildNodes();
-                    if (childNodeList.getLength() > 0) {
+                    if (childNodeList.getLength() > 0) { //second level
                         Node childNode = childNodeList.item(1);
-                        if (childNode.getNodeType() == Node.ELEMENT_NODE) {
+                        if (childNode.getNodeType() == Node.ELEMENT_NODE) { //ignore white space
                             Element eApp = (Element)childNode;
                             Attr eAttr = eApp.getAttributeNode("Name");                                
                             String attrLabel = eAttr.getTextContent();
-                            if (attrLabel.equals("AppID")) {
+                            if (attrLabel.equals("AppID")) { //match on the application index number
                                 String xmlAppID = eApp.getTextContent();
                                 if (xmlAppID.equals(appID)) {
                                     // if this is the first exploit for this application, insert a 
@@ -323,6 +360,7 @@ public class reportClass {
                                         vulCount.setTextContent(appVulCount.toString());
                                         node.appendChild(vulCount); 
                                     }
+                                    //add the vulnerability information to the new node
                                     Element newExploit = doc.createElement("Exploit");
                                     newExploit.setAttribute("ID", appID + "." + sequence.toString());
                                     node.appendChild(newExploit);
@@ -351,15 +389,21 @@ public class reportClass {
             //tr.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, cat + ".dtd");
             tr.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
 
-            // send DOM to file
+            // save the changes to the file
             tr.transform(new DOMSource(doc), new StreamResult(new FileOutputStream(filename)));
         } catch (SAXException | IOException | ParserConfigurationException | TransformerException ex) {
-            Logger.getLogger(reportClass.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ReportClass.class.getName()).log(Level.SEVERE, null, ex);
         }
         
     }
         
-    private String generateCVEURL(String cve) {
+    /**
+     * Using the CVE ID, create a string representing the http URL for the 
+     * vulnerability on CVE
+     * @param cve the CVE ID
+     * @return the URL for the CVE site
+     */
+    public String generateCVEURL(String cve) {
         //remove any unwanted characters
         cve = cve.replace("[", "");
         cve = cve.replace("]", "");
@@ -373,6 +417,6 @@ public class reportClass {
             cve = cve.substring(0, split); 
         }
         System.out.println(cve);              
-        return "http://www.cvedetails.com/cve/CVE-" + cve + "/";
+        return "https://www.cvedetails.com/cve/CVE-" + cve + "/";
     }
 }

@@ -7,31 +7,29 @@ package appwatch;
  */
 
 import java.io.*;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.InvalidParameterSpecException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.crypto.BadPaddingException;
-import javax.crypto.NoSuchPaddingException;
 import javax.swing.*;
 import javax.swing.table.*;
 import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
 
 /**
- *
+ * This class represents the first point of contact with the end user.  It 
+ * provides two option:
+ * 1. Create a new report by initiating an Application Scan
+ * 2. Open an existing report
  * @author David Harrop
  */
-public class homePage extends javax.swing.JDialog {
-    powerShellClass ps; 
-    reportClass rep;
+public class HomePage extends javax.swing.JDialog {
+    PowerShellClass ps; 
+    ReportClass rep;
+    HashListClass hash;
+    PasswordUI psUI;    
+    EncryptionManager enc;
     DefaultTableModel model;
-    hashListClass hash;
-    passwordUI psUI;
     String dir;
     String file;
     String filename;
@@ -45,11 +43,11 @@ public class homePage extends javax.swing.JDialog {
     
     /**
      * Creates new form homePage
-     * @param parent
-     * @param modal
+     * @param parent The Dialog from which this Dialog was called
+     * @param modal Flag that informs application to display this Dialog in front
      */
     @SuppressWarnings("OverridableMethodCallInConstructor")
-    public homePage(java.awt.Frame parent, boolean modal) {
+    public HomePage(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
         //this.model = (DefaultTableModel) reportTable.getModel();
         initComponents();   
@@ -74,12 +72,19 @@ public class homePage extends javax.swing.JDialog {
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu3 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
-        jMenuItem2 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setLocationByPlatform(true);
         setSize(new java.awt.Dimension(642, 394));
+        addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                formFocusGained(evt);
+            }
+        });
         addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosed(java.awt.event.WindowEvent evt) {
+                formWindowClosed(evt);
+            }
             public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
             }
@@ -138,15 +143,6 @@ public class homePage extends javax.swing.JDialog {
         });
         jMenu3.add(jMenuItem1);
 
-        jMenuItem2.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.ALT_MASK));
-        jMenuItem2.setLabel("Open highlighted report");
-        jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem2ActionPerformed(evt);
-            }
-        });
-        jMenu3.add(jMenuItem2);
-
         jMenuBar1.add(jMenu3);
 
         setJMenuBar(jMenuBar1);
@@ -184,98 +180,172 @@ public class homePage extends javax.swing.JDialog {
         pack();
     }// </editor-fold>//GEN-END:initComponents
     
-    /*
-    * When AppWatch is opened, check to see if the default application
-    * directory exists.  If it does not, create it        
+    /**
+     * 
+     * When AppWatch is opened, several  tests need to be performed to ensure that
+     * the environment is configured correctly.  Those tests are:
+     * 1. check to see if the application directory exists.  If not, create it.
+     * 2. check to see if the encrypted Hash List exists
+     *   a. if not, prompt the user for a password and create a new Hash List.  The
+     *      password will be used to encrypt the new Hash List file.
+     *   b. attempt to decrypt the Hash List
+     *       i. if decryption fails due to a bad password, ask the user to either
+     *          try again or create a new Hash File (this will result in all 
+     *          previously created reports being deleted.
+     * 3. Find all report files in the application directory and populate the table      
     */
     private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
+        onOpenDo();
+    }//GEN-LAST:event_formWindowOpened
+
+     /**
+      * The method that dictates what actions are performed when we open the
+      * Home Page for the first time.
+      */
+    public void onOpenDo() {
         this.setTitle("AppWatch");
         jLabel2.setText("Window open");
         boolean dirFound;
-        ps = new powerShellClass();
-        hash = new hashListClass();        
-                
+        ps = new PowerShellClass();
+        hash = new HashListClass();        
+        
+        //Search for the application directory
         dirFound = ps.dirSearch();
         dir = ps.getAppDir();
                 
         if (dirFound == false) {
-            System.out.println("hP: dirFound = False");
+            //application directory not found, so we must create ite
             try {
-                powerShellClass.dirMake(dir);
+                PowerShellClass.dirMake(dir);
             }
             catch (IOException ex) {
-                Logger.getLogger(homePage.class.getName()).log(Level.SEVERE, null, ex); 
+                Logger.getLogger(HomePage.class.getName()).log(Level.SEVERE, null, ex); 
             }
-        } else {
-            /* As the application directory exists, now check to see if the Hash List exists
-            ** if it does, then prompt for the password.
-            ** If it doesn't, prompt for a new password with confirmation to be used 
-            ** in encrypting a new Hash File, which will also have to be created
-            */            
-            
-            filename = "hashlist.xml.enc";
-            file = dir + File.separator + filename;
-            hashExists = hash.checkHashFileExists(dir, filename);
-            
-            if (hashExists == false) {
-                psUI = new passwordUI(new javax.swing.JFrame(), true, "new");
-                psUI.setVisible(true);
-                this.key = passwordUI.key;
-                try {                    
-                    hash.createHashFile();
-                } catch (InvalidAlgorithmParameterException | IOException | NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidKeyException | InvalidParameterSpecException ex) {
-                    Logger.getLogger(homePage.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            } else {
-                existingHashFile(file);
-            } 
         }
-        jLabel2.setText(ps.homeDir() + File.separator + "AppWatch");
-    }//GEN-LAST:event_formWindowOpened
-
-    private void existingHashFile(String file) {
-        psUI = new passwordUI(new javax.swing.JFrame(), true, "existing");
-        psUI.setVisible(true);
-        this.key = passwordUI.key;
-        try {
-            hash.decryptHashFile(file, this.key);
-        } catch (BadPaddingException ex) {
-            //Logger.getLogger(homePage.class.getName()).log(Level.SEVERE, null, ex);
-            //then the file was not decrypted
-            System.out.println("BadPadding Caught!");
-            Object[] buttonOptions = {"Try again", "Create new"};
-            int n = JOptionPane.showOptionDialog(null, "I was unable to decrypt the Control File with the supplied password." + (char) 10 + 
-                    "It assures your report integrity, therefore I cannot verify the integrity of the existing reports." + (char) 10 +
-                    "Try again or create a new Control File?"
-                    , "WARNING!", JOptionPane.YES_NO_OPTION,
-                    JOptionPane.QUESTION_MESSAGE,
-                    null,     //do not use a custom Icon
-                    buttonOptions,  //the titles of buttons
-                    buttonOptions[0]);
-            filename = "hashlist.xml.enc";
-            file = dir + File.separator + filename;
-            if (n == 0) {                
-                existingHashFile(file);
-            } else {
-                File folder;
-                folder = new File(dir);
-                File[] listOfFiles = folder.listFiles();
+        /* As the application directory now exists, now check to see if the Hash 
+        ** List exists. If it does, then prompt for the password.
+        ** If it doesn't, prompt for a new password with confirmation to be used 
+        ** in encrypting a new Hash File, which will also have to be created
+        */            
         
-                for (File delFile : listOfFiles) {
-                    if (delFile.isFile()) {
-                        //File toDel = new File(delFile);
-                        if (delFile.delete()) {
-                            JOptionPane.showMessageDialog(null, "Control File and all previous reports successfully deleted.");
-                        } 
-                    }
+        filename = "hashlist.xml.enc";
+        file = dir + filename;
+        System.out.println("File: " + file);
+        hashExists = hash.checkHashFileExists(dir, filename);
+
+        if (hashExists == false) {
+            //there is no encrypted hash File, so one must be created
+            //prompt the user for a password to be used in encryption
+            psUI = new PasswordUI(new javax.swing.JFrame(), true, "new");
+            psUI.setVisible(true);
+            this.key = PasswordUI.key;
+            //create a new Hash File - this will overwrite any exiting Hash File.
+            hash.createHashFile();            
+        } else {
+            /** loop through attempts to decrypt the Hash File.  If decryption is
+             *  OK (eFH = 2), then populate the table.  If not, the user is asked if they
+             *  want to try the password again (eHF = 0) or delete all files
+             *  and start again (eFH = 1)
+             */
+            int eHF = 0;
+            while (eHF == 0) {                
+                filename = "hashlist.xml.enc";
+                file = dir + filename;
+                eHF = existingHashFile(file);
+                if (eHF == 1) {
+                    //Create New
+                    deleteAllFiles();
+                } else if (eHF == 2) {
+                    //Carry on, all good
+                    populateTable(ps.homeDir() + File.separator + "AppWatch");
                 }
             }
+        } 
+        jLabel2.setText(ps.homeDir() + File.separator + "AppWatch");
+    }
+    /**
+     * 
+     * @param file the Hash File 
+     * @return A number indicating which of 3 outcomes occurred
+     * [0 = Try Password Again, 1 = Delete all old files, 2 = Success]
+     */
+    public Integer existingHashFile(String file) {
+        psUI = new PasswordUI(new javax.swing.JFrame(), true, "existing");
+        psUI.setVisible(true);
+        this.key = PasswordUI.key;
+        try {
+            //decryptOK = hash.decryptHashFile(file, this.key);
+            hash.decryptHashFile(file, this.key);
+            System.out.println("Hash File decrypt successful");
+            return 2;
+        } catch (EncryptionManager.InvalidPasswordException ex) {
+            System.out.println("Incorrect password!");
+            //Logger.getLogger(HomePage.class.getName()).log(Level.SEVERE, null, ex);
+            /*then the file was not decrypted - the user can either try to enter
+            ** the password again, or start fresh with a new Hash File (this will
+            ** invalidate all previous reports) */
+            int n = queryDelete();
+            System.out.println("User response choice: " + n);
+            return n;
         } catch (Exception ex) {
-            Logger.getLogger(homePage.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("Decryption error!");
+            Logger.getLogger(HomePage.class.getName()).log(Level.SEVERE, null, ex);            
+            int n = queryDelete();
+            System.out.println("[Exception] return " + n);
+            return n;
         }
-        populateTable(ps.homeDir() + File.separator + "AppWatch");
     }
     
+    /**
+     * if the user chooses to delete all files, this method is called to 
+     * perform that action, then close the window.
+     */
+    public void deleteAllFiles() {
+        File folder;
+        folder = new File(dir);
+        File[] listOfFiles = folder.listFiles();
+        boolean deleteSuccess = true;
+        for (File delFile : listOfFiles) {
+            if (delFile.isFile()) {
+                //File toDel = new File(delFile);
+                if (delFile.delete() == false) {
+                    deleteSuccess = false;
+                } 
+            }                    
+        }
+        if (deleteSuccess == true) {
+            JOptionPane.showMessageDialog(null, "Control File and all previous reports successfully deleted.");
+        } else {
+            JOptionPane.showMessageDialog(null, "Could not delete all files. Open the Appwatch directory and manually delete");
+        }
+        dispose();
+    }
+    
+    /**
+     * If an incorrect password is supplied, then this method is called to 
+     * prompt the user to try again or delete all files (in case password is 
+     * forgotten)
+     * @return 
+     */
+    private Integer queryDelete() {
+        Object[] buttonOptions = {"Try again", "Create new"};
+        int n = JOptionPane.showOptionDialog(null, "I was unable to decrypt the Control File with the supplied password." + (char) 10 + 
+                "It assures your report integrity, therefore I cannot verify the integrity of the existing reports." + (char) 10 +
+                "Try again or create a new Control File?"
+                , "WARNING!", JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,     //do not use a custom Icon
+                buttonOptions,  //the titles of buttons
+                buttonOptions[0]);
+        
+        return n;
+    }
+    
+    /** 
+     * When the table is double-clicked, open the report at the mouse cursor.
+     * Before opening the report, we must first validate it's integrity by 
+     * comparing it's MD5 hash value to that stored in the Hash List.
+    */
     private void reportTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_reportTableMouseClicked
         String report_ID;
         String hashVal;
@@ -291,26 +361,34 @@ public class homePage extends javax.swing.JDialog {
             } else {
                 try {
                     //we have a report ID, now we must open and display the report contents
-                     //Verify the MD5 Hash value of the report
+                    //Verify the MD5 Hash value of the report
                     hashVal = rep.getHash(xml);
                     System.out.println("hashVal = " + hashVal);
                     if (hashVal != null) {
                         boolean validated = rep.validateHash(rep.getUNIDFromFile(filename), hashVal);
                         if (validated == true) {
+                            //MD5 hash values match, so the report integrity is valid
                             rep.openReport(report_ID);
                         } else {
+                            //This report has been edited outside of AppWatch since
+                            //it was last edited by the application.  We cannot trust it.
                             JOptionPane.showMessageDialog(null, "It looks like this report has been modified"
                             + " since AppWatch last saved it.  It should no longer be trusted"
                                     , "WARNING!", JOptionPane.WARNING_MESSAGE);
             }
                     } 
                 } catch (ParserConfigurationException | IOException | NoSuchAlgorithmException ex) {
-                    Logger.getLogger(homePage.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(HomePage.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
         }
     }//GEN-LAST:event_reportTableMouseClicked
 
+    /**
+     * When closing the application we need to encrypt the Hash List and then delete
+    *  the unencrypted file.  This ensures that only AppWatch can edit the Hash List
+    *  and that it cannot be altered by external actors.
+    */
     private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
         //protect the hash list from modification whilst AppWatch is closed
         filename = ps.getAppDir() + "hashlist.xml";
@@ -321,7 +399,7 @@ public class homePage extends javax.swing.JDialog {
             System.out.println("deleting " + delFile.getName());
             delFile.delete();
         } catch (Exception ex) {
-            Logger.getLogger(homePage.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(HomePage.class.getName()).log(Level.SEVERE, null, ex);
         }
     }//GEN-LAST:event_formWindowClosing
 
@@ -339,19 +417,18 @@ public class homePage extends javax.swing.JDialog {
         String md5Hash;
         String rID;
         File report;
-        ps = new powerShellClass();
-        rep = new reportClass();
-        System.out.println("menu item clicked!");
+        ps = new PowerShellClass();
+        rep = new ReportClass();
         //check to see if the default application directory exists
         dirFound = ps.dirSearch();
        
         if (dirFound == false) {
             try {
                 // cannot locate the directory, attempt to create it
-                powerShellClass.dirMake(ps.homeDir());
+                PowerShellClass.dirMake(ps.homeDir());
             }
             catch (IOException ex) {
-                Logger.getLogger(homePage.class.getName()).log(Level.SEVERE, null, ex); 
+                Logger.getLogger(HomePage.class.getName()).log(Level.SEVERE, null, ex); 
                 dirMade = false;
             }
         } else {
@@ -359,12 +436,21 @@ public class homePage extends javax.swing.JDialog {
         }
         /* the dirMade variable is true, unless the attempt to create the default
         *  directory has failed.  This means that the application scan cannot be
-        *  initiated unless the directory existss
+        *  initiated unless the directory exists
         */
         if (dirMade) {
             jStatusLabel.setText("Scanning for installed applications...");
             try {
+                /* Call powershell to perform the search.  Once complete
+                ** insert a unique identifer for each found application into the
+                ** XML file. Then grab the XML file's MD5 hash value so we can
+                ** store it in the Hash List.
+                ** Finally, add the report to the table.
+                */
                 filename = ps.appSearch(); 
+                if (filename.equals("Error detected during scan")) {
+                    throw new IOException("Error during PowerShell scan.");   
+                }
                 rep.addAppUNIDS(filename);
                 report = new File(filename);                
                 md5Hash = rep.getHash(report);
@@ -375,19 +461,32 @@ public class homePage extends javax.swing.JDialog {
             }
             // if the appSearch method throws any exception, return a general error
             catch (IOException | SAXException | NoSuchAlgorithmException ex) {
-                Logger.getLogger(homePage.class.getName()).log(Level.SEVERE, null, ex);     
+                Logger.getLogger(HomePage.class.getName()).log(Level.SEVERE, null, ex);     
             }
         }
     }//GEN-LAST:event_jMenuItem1ActionPerformed
 
-    private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jMenuItem2ActionPerformed
+    /**
+     * When we close child windows and return to HomePage, refresh the table
+     * contents in case changes have been made to reports
+     * @param evt trigger for table refresh
+     */
+    private void formFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_formFocusGained
+        populateTable(ps.homeDir() + File.separator + "AppWatch");
+    }//GEN-LAST:event_formFocusGained
+
+    /**
+     * Quit the application
+     * @param evt trigger
+     */
+    private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
+        System.exit(0);
+    }//GEN-LAST:event_formWindowClosed
 
     /**
      * Populate the table with a list of all the reports found in the 
      * AppWatch directory.
-     * @param dir the directory to find reports in
+     * @param dir the application directory in which to find reports
      * source: https://stackoverflow.com/questions/5924237/java-read-all-txt-files-in-folder
      */
     private void populateTable (String dir) {
@@ -399,7 +498,7 @@ public class homePage extends javax.swing.JDialog {
         Long lastMod;
         Date rDt;
         
-        rep = new reportClass();
+        rep = new ReportClass();
         model = (DefaultTableModel) reportTable.getModel();
         model.setRowCount(0);
 
@@ -416,11 +515,13 @@ public class homePage extends javax.swing.JDialog {
                     
                     model.addRow(row);
                 } catch (SAXException | IOException ex) {
-                    Logger.getLogger(homePage.class.getName()).log(Level.SEVERE, null, ex); 
+                    Logger.getLogger(HomePage.class.getName()).log(Level.SEVERE, null, ex); 
                 }                 
             } 
         }
         
+        /* Now the table contains data, we format it in terms of column widths
+        ** and alignments */
         TableColumn column;
         for (int i = 0; i < 3; i++) {
             column = reportTable.getColumnModel().getColumn(i);
@@ -459,15 +560,16 @@ public class homePage extends javax.swing.JDialog {
                 }
             }
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(homePage.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(HomePage.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
+        //</editor-fold>
         //</editor-fold>
         
         //</editor-fold>
 
         /* Create and display the dialog */
         java.awt.EventQueue.invokeLater(() -> {
-            homePage dialog = new homePage(new javax.swing.JFrame(), true);
+            HomePage dialog = new HomePage(new javax.swing.JFrame(), true);
             dialog.addWindowListener(new java.awt.event.WindowAdapter() {
                 @Override
                 public void windowClosing(java.awt.event.WindowEvent e) {
@@ -484,7 +586,6 @@ public class homePage extends javax.swing.JDialog {
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JMenuItem jMenuItem1;
-    private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JLabel jStatusLabel;
     private javax.swing.JTable reportTable;

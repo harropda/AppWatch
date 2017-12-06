@@ -12,31 +12,28 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
+ * This UI Class prompts the user to enter the password previously used
+ * to encrypt the Hash File or, if no Hash File exists, to supply and confirm
+ * a new password
  * @author David Harrop
  */
-public class passwordUI extends javax.swing.JDialog {
-    private String filename;
+public class PasswordUI extends javax.swing.JDialog {
     private static String action;
-    private String iteration;
-
-    /**
-     *
-     */
     public static String key;
     
     /**
-     *
-     * @param parent
-     * @param modal
-     * @param action
+     * present the password box and enable the appropriate field(s) depending
+     * upon the action [new | existing] being performed.
+     * @param parent Dialog from which this dialog was called
+     * @param modal Flag that informs the application to display this Dialog in front
+     * @param action Indicates New or Existing password being entered by user
      */
     @SuppressWarnings("OverridableMethodCallInConstructor")
-    public passwordUI(java.awt.Frame parent, boolean modal, String action) {
+    public PasswordUI(java.awt.Frame parent, boolean modal, String action) {
         super(parent, modal);
-        passwordUI.action = action;
+        PasswordUI.action = action;
         initComponents();          
-        setLocationRelativeTo(null);
+        setLocationRelativeTo(null);  //central position
         getRootPane().setDefaultButton(jButton1);
         jButton1.setEnabled(false);
         jPasswordField2.setEnabled(false);
@@ -44,9 +41,9 @@ public class passwordUI extends javax.swing.JDialog {
         jPasswordField2.setVisible(false);
                 
         System.out.println("psUI: Action = " + action);
-        if (passwordUI.action.equals("new")) {
-            jPasswordField1.setToolTipText("Enter and confirm a password to be used to encrypt the control file.  This file"
-                    + "assures the integrity of the data we provide you.  Don't forget it!");
+        if (PasswordUI.action.equals("new")) {
+            jPasswordField1.setToolTipText("Enter and confirm a password to be used to encrypt the control file." + 
+                    (char) 10 + "This file assures the integrity of the data we provide you.  Don't forget it!");
         } else {
             jPasswordField1.setToolTipText("What password did you set the first time you opened AppWatch?");
         }
@@ -77,7 +74,6 @@ public class passwordUI extends javax.swing.JDialog {
         setMinimumSize(new java.awt.Dimension(380, 140));
 
         jPasswordField1.setToolTipText("");
-        jPasswordField1.setEchoChar('*');
         jPasswordField1.setMinimumSize(new java.awt.Dimension(111, 20));
         jPasswordField1.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
@@ -87,7 +83,6 @@ public class passwordUI extends javax.swing.JDialog {
 
         jLabel1.setText("Enter password:");
 
-        jPasswordField2.setEchoChar('*');
         jPasswordField2.setMinimumSize(new java.awt.Dimension(111, 20));
         jPasswordField2.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
@@ -107,9 +102,9 @@ public class passwordUI extends javax.swing.JDialog {
         pwErrorLabel.setForeground(new java.awt.Color(255, 0, 0));
 
         jLabel3.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
-        jLabel3.setForeground(new java.awt.Color(255, 102, 0));
+        jLabel3.setForeground(new java.awt.Color(0, 0, 255));
         jLabel3.setText("?");
-        jLabel3.setToolTipText("Passwords must:   \nBe at least 8 characters long   \nContain at least one UPPERCASE character   \nContain at least one lowercase character   \nContain at least one special character ~!@#$%^&*()_-");
+        jLabel3.setToolTipText("Passwords must:" + (char) 10 + "Be at least 8 characters long" + (char) 10 + "Contain at least one UPPERCASE character" + (char) 10 + "Contain at least one lowercase character" + (char) 10 + "Contain at least one special character ~!@#$%^&*()_-");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -160,19 +155,30 @@ public class passwordUI extends javax.swing.JDialog {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    /**
+     * The OK button, sets the class return value to the password entered by
+     * the user
+     * @param evt 
+     */
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         setVisible(false);
         dispose();
         String passcode = new String(jPasswordField1.getPassword());
-        passwordUI.key = passcode;
+        PasswordUI.key = passcode;
     }//GEN-LAST:event_jButton1ActionPerformed
 
+    /**
+     * After each key release, validate the entered password against the rules
+     * we have configured in the verifyPasswords method.
+     * @param evt 
+     */
     private void jPasswordField1KeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jPasswordField1KeyReleased
         
-        if (passwordUI.action.equals("existing")) {
+        if (PasswordUI.action.equals("existing")) {
             jButton1.setEnabled(true);
         } else {
             if(verifyPasswords()){
+                //it's good, display the confirm box as this is a new password
                 System.out.println("psUI: passwords verified");
                 jLabel2.setVisible(true); 
                 jPasswordField2.setVisible(true);             
@@ -182,6 +188,11 @@ public class passwordUI extends javax.swing.JDialog {
         }
     }//GEN-LAST:event_jPasswordField1KeyReleased
 
+    /**
+     * After each key release in the Confirm box, verify that the second password
+     * matches the first.  do not enable the OK button until they do.
+     * @param evt 
+     */
     private void jPasswordField2KeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jPasswordField2KeyReleased
         if(verifyPasswords()){
             jButton1.setEnabled(true);
@@ -192,9 +203,12 @@ public class passwordUI extends javax.swing.JDialog {
 
     /**
      * This method was copied from Secure Programming CA3 submitted by 
-     * David Harrop (03298051) & Krzysztof Pawlik (16138147)
+     * David Harrop (03298051) and Krzysztof Pawlik (16138147).
+     * It checks the entered first password against the rules we have defined.
+     * It also checks the entered second password against the first.
+     * @return true [password(s) OK] or false [some problem detected]
      */
-    private boolean verifyPasswords() {
+    public boolean verifyPasswords() {
         /**
          * First, confirm that the first password is 8 or more characters
          * if yes, then check each character in the password to ensure that 
@@ -247,7 +261,7 @@ public class passwordUI extends javax.swing.JDialog {
             } 
         }
         if (upper = true && lower == true && digit == true && symbol == true) {
-            if (passwordUI.action.equals("new")) {
+            if (PasswordUI.action.equals("new")) {
                 System.out.println("psUI: enable second pw field");
                 jLabel2.setEnabled(true);
                 jPasswordField2.setEnabled(true);
@@ -259,6 +273,7 @@ public class passwordUI extends javax.swing.JDialog {
         }
         return false;
     }
+    
     /**
      * @param args the command line arguments
      */
@@ -276,21 +291,24 @@ public class passwordUI extends javax.swing.JDialog {
                 }
             }
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
-            Logger.getLogger(passwordUI.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(PasswordUI.class.getName()).log(Level.SEVERE, null, ex);
         }
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
         //</editor-fold>
         
         //</editor-fold>
         /* Create and display the form 
         java.awt.EventQueue.invokeLater(() -> {
-            new passwordUI(action).setVisible(true);
+            new PasswordUI(action).setVisible(true);
         });
         */
         /* Create and display the dialog */
         java.awt.EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
-                passwordUI dialog = new passwordUI(new javax.swing.JFrame(), true, action);
+                PasswordUI dialog = new PasswordUI(new javax.swing.JFrame(), true, action);
                 dialog.addWindowListener(new java.awt.event.WindowAdapter() {
                     @Override
                     public void windowClosing(java.awt.event.WindowEvent e) {

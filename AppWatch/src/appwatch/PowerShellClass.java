@@ -14,11 +14,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.xml.sax.SAXException;
 /**
- *
+ * Class used to interact with the Windows OS in order to retrieve the
+ * list of installed applications, create/get/set the default application 
+ * directory.
+ * 
  * @author David Harrop
  */
-public class powerShellClass {
-    reportClass report;
+public class PowerShellClass {
+    ReportClass report;
     String currentUsersHomeDir;
     String appDir;
        
@@ -26,20 +29,23 @@ public class powerShellClass {
         // TODO code application logic here
         
     }   
-    
+    /**
+     * setter method for directory
+     * @return the Application Directory
+     */
     public final String setAppDir() {
         return this.currentUsersHomeDir + File.separator + "AppWatch"+ File.separator;
     }
 
-    public powerShellClass() {
+    public PowerShellClass() {
         this.currentUsersHomeDir = homeDir();
         this.appDir = setAppDir();
     }
 
     
     /**
-     *
-     * @return
+     * Identify the application directory
+     * @return the full directory path
      */
     public String getAppDir() {
         setAppDir();
@@ -47,25 +53,30 @@ public class powerShellClass {
     }
     
     /**
+     * Credit: https://stackoverflow.com/questions/29545611/executing-powershell-commands-in-java-program
      * Compile the Windows Powershell command that retrieves the list of installed
      * applications and parses it to a local file.
      * The local file must be uniquely named, so get the UNID of the report
-     * from the reportClass
-     * Execute the command and retrieve the results
+ from the ReportClass
+ Execute the command and retrieve the results
      * @return Status message
      * @throws java.io.IOException
+     *  Catches errors writing to report file
      * @throws org.xml.sax.SAXException
+     *  Catches errors parsing XML file
      */
     public String appSearch() throws IOException, SAXException {
         
-        report = new reportClass();
+        //we are creating a new report, so we need a UNID for it
+        report = new ReportClass();
         report.setReportID();
         String unid = report.getReportID();
         Integer appCount;
         String quotes = "'";
+        //set the report file as target
         String target = getAppDir() + unid + ".xml";        
         String targetQ = quotes + target + quotes;
-        String command = "powershell.exe  (Get-ItemProperty HKLM:\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Select-Object DisplayName, DisplayVersion, Publisher | ConvertTo-XML –NoTypeInformation).Save("+ targetQ + ")";
+        String command = "powershell.exe  (Get-ItemProperty HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Select-Object DisplayName, DisplayVersion, Publisher | ConvertTo-XML –NoTypeInformation).Save("+ targetQ + ")";
         String line;
         // Executing the command
         Process powerShellProcess = Runtime.getRuntime().exec(command);
@@ -88,6 +99,8 @@ public class powerShellClass {
                 return "Error detected during scan";
             }
         }
+        //update the new report with identifying data so we can re-use the report
+        //later
         report.insertXML(unid, "report_ID", target);
         report.insertXML("Application Scan", "report_Stage", target);
         appCount = report.countApps(target);
@@ -96,8 +109,9 @@ public class powerShellClass {
     }
     
     /**
-     * Source: https://examples.javacodegeeks.com/core-java/io/file/check-if-directory-exists/
-     * @return 
+     * Credit: https://examples.javacodegeeks.com/core-java/io/file/check-if-directory-exists/
+     * Confirm the existence of lack thereof of the application directory
+     * @return true or false
      */
     public boolean dirSearch() {
         File dir = new File(this.appDir);
@@ -106,10 +120,12 @@ public class powerShellClass {
     }
     
     /**
-     * Code sourced from https://examples.javacodegeeks.com/core-java/io/file/construct-a-file-path-in-java-example/
+     * Credit: https://examples.javacodegeeks.com/core-java/io/file/construct-a-file-path-in-java-example/
+     * Create the application directory, as it does not exist.
      * @param homeDir the AppWatch directory
-     * @return 
+     * @return true or false, was the directory created successfully
      * @throws java.io.IOException
+     *  Catches errors writing to the file system
      */
     public static boolean dirMake(String homeDir) throws IOException {
         boolean dirMade = false;
@@ -118,11 +134,15 @@ public class powerShellClass {
             dir.getParentFile().mkdirs();
             dirMade = dir.createNewFile();
         } catch (IOException ex) {
-            Logger.getLogger(powerShellClass.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(PowerShellClass.class.getName()).log(Level.SEVERE, null, ex);
         }
         return dirMade;
     }
 
+    /**
+     * get the hoe directory associated with the users OS login
+     * @return  the User Directory in the file system
+     */
     public final String homeDir() {
         return System.getProperty("user.home");
     }
