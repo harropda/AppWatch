@@ -22,7 +22,7 @@ Add this directory as a new Ppoject in your IDE
 
 ## Built With
 
-* [Netbeans](https://netbeans.org/ - Java Development IDE
+* [Netbeans](https://netbeans.org/) - Java Development IDE
 
 ## Contributing
 
