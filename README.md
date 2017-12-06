@@ -39,3 +39,4 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 ## Acknowledgments
 
 * D. Weymouth - EncryptionManager.java
+* Any and all contributors at stackoverflow -we'd be nowhere without our dev community.
