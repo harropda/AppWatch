@@ -1,9 +1,7 @@
 package appwatch;
 
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright (c) 2017 David Harrop
  */
 
 
@@ -51,6 +49,13 @@ public class ReportUI extends javax.swing.JDialog {
     private final File xml;
     private final String date;
     public final String reportID;
+    String baseURL;
+    String keyURL;
+    String charset;
+    String platform;
+    String searchType;
+    Integer totalVuls = 0;
+    DefaultTableModel model;
     ApplicationUI appUI;
 
     /**
@@ -111,14 +116,14 @@ public class ReportUI extends javax.swing.JDialog {
      * Called upon class instantiation.  Retrieves values from the selected report
      * file and displays them in the UI.
      */
-    private void populateTable() {
+    public void populateTable() {
         String appID;
         String appName;
         String appVersion;
         String appPublisher;      
         String appVulCount;
         Integer count = 0;
-        DefaultTableModel model = (DefaultTableModel) appTable.getModel();
+        this.model = (DefaultTableModel) appTable.getModel();
         model.setRowCount(0);
         //traverse the xml file to retrieve the application information 
         //and output it to the table
@@ -226,6 +231,7 @@ public class ReportUI extends javax.swing.JDialog {
         repNumApps = new javax.swing.JTextField();
         vulFound = new javax.swing.JTextField();
         status = new javax.swing.JLabel();
+        useVersionNum = new javax.swing.JCheckBox();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
@@ -301,6 +307,10 @@ public class ReportUI extends javax.swing.JDialog {
 
         status.setFont(new java.awt.Font("Tahoma", 0, 10)); // NOI18N
 
+        useVersionNum.setText("Ignore Version Number when scanning");
+        useVersionNum.setToolTipText("Enabling this setting ignores the version number for each application.  The Vulnerability Scan is performed on the application name only");
+        useVersionNum.setBorder(null);
+
         jMenu1.setText("Action");
 
         jMenuItem1.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_V, java.awt.event.InputEvent.ALT_MASK));
@@ -324,54 +334,53 @@ public class ReportUI extends javax.swing.JDialog {
             .addGroup(layout.createSequentialGroup()
                 .addGap(22, 22, 22)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(status)
                     .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(repDateLabel)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(repDate, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(repIDLabel)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(repID, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(200, 200, 200)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(repNumAppsLabel)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(repNumApps, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(vulFoundLabel)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(vulFound, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addComponent(status)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(useVersionNum)
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(repIDLabel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(repID, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(repDateLabel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(repDate, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(176, 176, 176)
+                        .addComponent(repNumAppsLabel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(repNumApps, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(57, 57, 57)
+                        .addComponent(vulFoundLabel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(vulFound, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(203, 203, 203))))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(repIDLabel)
+                        .addComponent(repID, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(repNumAppsLabel)
+                        .addComponent(repNumApps, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(vulFoundLabel)
+                        .addComponent(vulFound, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(repDateLabel)
+                        .addComponent(repDate, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(repIDLabel)
-                            .addComponent(repID, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(repDateLabel)
-                            .addComponent(repDate, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(25, 25, 25)
+                        .addComponent(status))
                     .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(repNumAppsLabel)
-                            .addComponent(repNumApps, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(vulFoundLabel)
-                            .addComponent(vulFound, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addGap(5, 5, 5)
-                .addComponent(status)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 454, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(useVersionNum)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 448, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -384,28 +393,35 @@ public class ReportUI extends javax.swing.JDialog {
      * @param evt 
      */
     private void appTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_appTableMouseClicked
+               
+        if (evt.getClickCount() == 2) {
+            onDoubleClick();
+        }        
+    }//GEN-LAST:event_appTableMouseClicked
+
+    /**
+     * Action to be performed when a row in the table is double-clicked
+     * Open the Application Details page for the selected row
+     */
+    public void onDoubleClick() {
         String appID;
         String appName;
         String appVersion;
-        
-        if (evt.getClickCount() == 2) {
-            Object aID = appTable.getValueAt(appTable.getSelectedRow(), 0);
-            appID = aID.toString();
-            Object product = appTable.getValueAt(appTable.getSelectedRow(), 1);
-            appName = product.toString();
-            Object version = appTable.getValueAt(appTable.getSelectedRow(), 2);
-            appVersion = version.toString();
-            if (reportID.equals("")) {
-                // a row without a Report ID value has been clicked, can't do anything
-                JOptionPane.showMessageDialog(null, "Invalid selection", "WARNING!", JOptionPane.WARNING_MESSAGE);
-            } else {
-                    appUI = new ApplicationUI(new javax.swing.JFrame(), true, xml, appID, appName, appVersion, date);
-                    appUI.setVisible(true);
-            }
+        Object aID = appTable.getValueAt(appTable.getSelectedRow(), 0);
+        appID = aID.toString();
+        Object product = appTable.getValueAt(appTable.getSelectedRow(), 1);
+        appName = product.toString();
+        Object version = appTable.getValueAt(appTable.getSelectedRow(), 2);
+        appVersion = version.toString();
+        if (reportID.equals("")) {
+            // a row without a Report ID value has been clicked, can't do anything
+            JOptionPane.showMessageDialog(null, "Invalid selection", "WARNING!", JOptionPane.WARNING_MESSAGE);
+        } else {
+                appUI = new ApplicationUI(new javax.swing.JFrame(), true, xml, appID, appName, appVersion, date);
+                appUI.setVisible(true);
         }
-        
-    }//GEN-LAST:event_appTableMouseClicked
-
+    }
+    
     /**
      * Performs a Vulnerability scan for each application listed in the table.
      * Application Name & Version are parsed into a query URL, which is fired
@@ -415,29 +431,19 @@ public class ReportUI extends javax.swing.JDialog {
      */
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
         //Set variables and instantiate support classes
-        String baseURL = "https://exploits.shodan.io/api/search?query=";
-        String keyURL = "&key=" + apiKey;
-        String charset = "UTF-8";
-        String product;
-        String version;
-        String appID;
-        String platform = "platform:\"windows\""; //Not interested in exploits
-        //for other OS at this time.
-        String query;
-        String source;
-        String cve;
-        String cveURL;
-        String description;
+        this.baseURL = "https://exploits.shodan.io/api/search?query=";
+        this.keyURL = "&key=" + apiKey;
+        this.charset = "UTF-8";
+        this.platform = "platform:\"windows\""; //Not interested in exploits for other OS at this time.
+        this.searchType = "";
         String rID;
         String md5Hash;
-        HttpURLConnection connection;
-        URL url;
-        Integer totalVuls = 0;
-        InputStream response;
+        boolean scanOK;       
+        
         rep = new ReportClass();
         hash = new HashListClass();  
          
-        DefaultTableModel model = (DefaultTableModel) appTable.getModel();
+        this.model = (DefaultTableModel) appTable.getModel();
         Integer lastrow = model.getRowCount();
         //open the XML file for read/edit
         /*DocumentBuilderFactory dBF = DocumentBuilderFactory.newInstance();
@@ -453,94 +459,18 @@ public class ReportUI extends javax.swing.JDialog {
         status.setText("searching...");
         for (int r = 0 ; r < lastrow ; r++) {
         //for (int r = 0 ; r < 1 ; r++) {
-            
-            model.fireTableDataChanged();
-            appTable.updateUI();
-            appID = model.getValueAt(r, 0).toString();
-            product = model.getValueAt(r, 1).toString();
-            version = model.getValueAt(r, 2).toString();
-            status.setText("searching.");
-                                   
-            try {   
-                //Seems like the free Shoden API is throttled - without a sleep
-                //the second GET request returns 503 error.
-                sleep(1000);
-                product = product.replace("-", "");
-                version = version.replace("-", "");
-                //product = "FTP Explorer"; //for testing only - delete
-                product = product.replace("[", "");
-                product = product.replace("]", "");
-                //version = ""; //for testing only - delete
-                System.out.println("Searching vulnerabilities for " + product + " " + version);
-                //create the query string
-                query = URLEncoder.encode(product, charset) + "+" 
-                        + URLEncoder.encode(version, charset) + "+" 
-                        //+ URLEncoder.encode(querytype, charset) + "+" 
-                        + URLEncoder.encode(platform, charset);
-                url = new URL(baseURL + query + keyURL);      
-                //open the connection
-                connection = (HttpURLConnection)url.openConnection();
-                System.out.println("HTTP Response Code: " + connection.getResponseCode());
-                //read the response to GET request
-                response = connection.getInputStream();
-                
-                //JSON parsing
-                BufferedReader buffer = new BufferedReader(new InputStreamReader(response));
-                // get the data
-                JSONObject jsonObject = (JSONObject) JSONValue.parse(buffer);
-                System.out.println("jsonObject.toString()= " + jsonObject.toString());
-                if (!jsonObject.toString().contains("error")) {
-                    
-                    // get the first array of values
-                    JSONArray arraySet = (JSONArray) jsonObject.get("matches");
-                    System.out.println("Found: " + arraySet.size());
-                    totalVuls = totalVuls + arraySet.size();
-                    int i;
-                    status.setText("searching..");
-                    //we don't want every value from each array, just some key ones.
-                    //traverse the each array in the set, retreiving only the desired
-                    // values
-                    for (i = 0 ; i < arraySet.size() ; i++) {
-                        JSONObject array = (JSONObject) arraySet.get(i);
-                        if (array.containsKey("source")) {
-                            source = array.get("source").toString();
-                        } else {
-                            source = "";
-                        }
-                        if (array.containsKey("cve")) {
-                            cve = array.get("cve").toString();
-                        } else {
-                            cve = "";
-                        }
-                        if (array.containsKey("description")) {
-                            description = array.get("description").toString();
-                        } else {
-                            description = "";
-                        }
-                        rep.addVResult(filename, i, appID, cve, description, source, arraySet.size());
-                        populateTable();
-                    }
-                } else {
-                    rep.addVResult(filename, 0, appID, "Error", "query error", "Error", 0);
-                    populateTable();
-                }
-            } catch (UnknownHostException ex) {
-                JOptionPane.showMessageDialog(null, "Seems like you don't have an internet connection or Shodan is down"
-                                    , "Connection Error", JOptionPane.WARNING_MESSAGE);
+            scanOK = performScanForApp(r);
+            if (scanOK == false){
                 break;
-            } catch (UnsupportedEncodingException ex) {
-                Logger.getLogger(ReportUI.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (MalformedURLException | InterruptedException ex) {
-                Logger.getLogger(ReportUI.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (IOException ex) {
-                Logger.getLogger(ReportUI.class.getName()).log(Level.SEVERE, null, ex);
             }
+            
         }
         //update the report file with new status and the aggregate data from our query
         //finally update the stored hash value for the report.
         try {
             rep.insertXML(totalVuls.toString(), "vul_Count", filename);
             rep.insertXML("Vulnerability Scan", "report_Stage", filename);
+            rep.insertXML(searchType, "scan_Type", filename);
             md5Hash = rep.getHash(new File(filename));
             rID = rep.getUNIDFromFile(filename);
             hash.setHash(rID, md5Hash);
@@ -554,6 +484,118 @@ public class ReportUI extends javax.swing.JDialog {
                                     , "Scan status", JOptionPane.INFORMATION_MESSAGE);
     }//GEN-LAST:event_jMenuItem1ActionPerformed
 
+    /**
+     * 
+     * @param r Row number from table identifying application to scan for
+     * @return true or false, indicating success of scanning for 
+     * vulnerabilities for the app in question
+     */
+    public boolean performScanForApp(Integer r) {
+        String product;
+        String version;
+        String appID;
+        String query;
+        String source;
+        String cve;
+        String cveURL;
+        String description;
+        
+        HttpURLConnection connection;
+        URL url;
+        InputStream response;
+        
+        model.fireTableDataChanged();
+        appTable.updateUI();
+        appID = model.getValueAt(r, 0).toString();
+        product = model.getValueAt(r, 1).toString();
+        version = model.getValueAt(r, 2).toString();
+        status.setText("searching.");
+                                   
+        try {   
+            //Seems like the free Shoden API is throttled - without a sleep
+            //the second GET request returns 503 error.
+            sleep(1000);
+            product = product.replace("-", "");
+            version = version.replace("-", "");
+            //product = "FTP Explorer"; //for testing only - delete
+            product = product.replace("[", "");
+            product = product.replace("]", "");
+            //version = ""; //for testing only - delete
+            System.out.println("Searching vulnerabilities for " + product + " " + version);
+            //create the query string
+            if (useVersionNum.isSelected()) {
+                query = URLEncoder.encode(product, charset) + "+"  
+                    + URLEncoder.encode(platform, charset);
+                searchType = "Application Name Only";
+            } else {
+                query = URLEncoder.encode(product, charset) + "+" 
+                    + URLEncoder.encode(version, charset) + "+" 
+                    //+ URLEncoder.encode(querytype, charset) + "+" 
+                    + URLEncoder.encode(platform, charset);
+                searchType = "Application Name & Version";
+            }
+
+            url = new URL(baseURL + query + keyURL);      
+            //open the connection
+            connection = (HttpURLConnection)url.openConnection();
+            System.out.println("HTTP Response Code: " + connection.getResponseCode());
+            //read the response to GET request
+            response = connection.getInputStream();
+
+            //JSON parsing
+            BufferedReader buffer = new BufferedReader(new InputStreamReader(response));
+            // get the data
+            JSONObject jsonObject = (JSONObject) JSONValue.parse(buffer);
+            System.out.println("jsonObject.toString()= " + jsonObject.toString());
+            if (!jsonObject.toString().contains("error")) {
+
+                // get the first array of values
+                JSONArray arraySet = (JSONArray) jsonObject.get("matches");
+                System.out.println("Found: " + arraySet.size());
+                totalVuls = totalVuls + arraySet.size();
+                int i;
+                status.setText("searching..");
+                //we don't want every value from each array, just some key ones.
+                //traverse the each array in the set, retreiving only the desired
+                // values
+                for (i = 0 ; i < arraySet.size() ; i++) {
+                    JSONObject array = (JSONObject) arraySet.get(i);
+                    if (array.containsKey("source")) {
+                        source = array.get("source").toString();
+                    } else {
+                        source = "";
+                    }
+                    if (array.containsKey("cve")) {
+                        cve = array.get("cve").toString();
+                    } else {
+                        cve = "";
+                    }
+                    if (array.containsKey("description")) {
+                        description = array.get("description").toString();
+                    } else {
+                        description = "";
+                    }
+                    rep.addVResult(filename, i, appID, cve, description, source, arraySet.size());
+                    populateTable();
+                }
+            } else {
+                rep.addVResult(filename, 0, appID, "Error", "query error", "Error", 0);
+                populateTable();
+            }
+        } catch (UnknownHostException ex) {
+            JOptionPane.showMessageDialog(null, "Seems like you don't have an internet connection or Shodan is down"
+                                , "Connection Error", JOptionPane.WARNING_MESSAGE);
+            return false;
+        } catch (UnsupportedEncodingException ex) {
+            Logger.getLogger(ReportUI.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (MalformedURLException | InterruptedException ex) {
+            Logger.getLogger(ReportUI.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(ReportUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return true;
+    }
+    
     /**
      * @param args the command line arguments
      */
@@ -613,6 +655,7 @@ public class ReportUI extends javax.swing.JDialog {
     private javax.swing.JTextField repNumApps;
     private javax.swing.JLabel repNumAppsLabel;
     private javax.swing.JLabel status;
+    private javax.swing.JCheckBox useVersionNum;
     private javax.swing.JTextField vulFound;
     private javax.swing.JLabel vulFoundLabel;
     // End of variables declaration//GEN-END:variables

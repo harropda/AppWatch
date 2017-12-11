@@ -1,9 +1,7 @@
 package appwatch;
 
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright (c) 2017 David Harrop
  */
 
 
@@ -300,38 +298,50 @@ public final class ApplicationUI extends javax.swing.JDialog {
         Integer column = vulTable.getSelectedColumn();
         if (column == 3) { //the CVE URL column
              if (evt.getClickCount() == 1) {
-                Object link = vulTable.getValueAt(vulTable.getSelectedRow(), 3);
-                 try {                     
-                    if (Desktop.isDesktopSupported()) {
-                        //assuming that the column value is a correctly 
-                        //constructed URL, try to open it in the default browser
-                        Desktop.getDesktop().browse(new URI(link.toString()));
-                    }                     
-                 } catch (MalformedURLException ex) {
-                     Logger.getLogger(ApplicationUI.class.getName()).log(Level.SEVERE, null, ex);
-                 } catch (IOException | URISyntaxException ex) {
-                     Logger.getLogger(ApplicationUI.class.getName()).log(Level.SEVERE, null, ex);
-                 }
+                onSingleClick();
             }
         } else { //any other column            
             if (evt.getClickCount() == 2) {
                 //double clicked, so open the Vulnerability Details page using
                 //information from the selected row
-                Object source = vulTable.getValueAt(vulTable.getSelectedRow(), 0);
-                Object cveID = vulTable.getValueAt(vulTable.getSelectedRow(), 1);
-                Object desc = vulTable.getValueAt(vulTable.getSelectedRow(), 2);
-                Object cveURL = vulTable.getValueAt(vulTable.getSelectedRow(), 3);
-                try {
-                    vulUI = new VulnerabilityUI(new javax.swing.JFrame(), true, source.toString(), cveID.toString(), desc.toString(), cveURL.toString());
-                } catch (BadLocationException | IOException ex) {
-                    Logger.getLogger(ApplicationUI.class.getName()).log(Level.SEVERE, null, ex);
-                }
-                vulUI.setVisible(true);
+                onDoubleClick();
             }
-        }
-       
+        }       
     }//GEN-LAST:event_vulTableMouseClicked
-
+  
+    /**
+     * Action to be performed when a row is single-clicked at column 3 (URL)
+     * Open the URL in the default browser
+     */
+    public void onSingleClick() {
+        Object link = vulTable.getValueAt(vulTable.getSelectedRow(), 3);
+        try {                     
+           if (Desktop.isDesktopSupported()) {
+               //assuming that the column value is a correctly 
+               //constructed URL, try to open it in the default browser
+               Desktop.getDesktop().browse(new URI(link.toString()));
+           }                     
+        } catch (MalformedURLException ex) {
+            Logger.getLogger(ApplicationUI.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException | URISyntaxException ex) {
+            Logger.getLogger(ApplicationUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    /**
+     * Action to be performed when a row is double clicked at any column
+     * Open the Vulnerability Details page for the selected row
+     */
+    public void onDoubleClick() {
+        Object source = vulTable.getValueAt(vulTable.getSelectedRow(), 0);
+        Object cveID = vulTable.getValueAt(vulTable.getSelectedRow(), 1);
+        Object desc = vulTable.getValueAt(vulTable.getSelectedRow(), 2);
+        Object cveURL = vulTable.getValueAt(vulTable.getSelectedRow(), 3);
+                
+        vulUI = new VulnerabilityUI(new javax.swing.JFrame(), true, source.toString(), cveID.toString(), desc.toString(), cveURL.toString());
+        vulUI.setVisible(true);
+    }
+    
     /**
      * @param args the command line arguments
      */

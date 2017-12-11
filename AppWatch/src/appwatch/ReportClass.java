@@ -1,9 +1,7 @@
 package appwatch;
 
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright (c) 2017 David Harrop
  */
 
 
@@ -46,7 +44,7 @@ public class ReportClass {
         Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
         long time = cal.getTimeInMillis();
         Long stamp = System.currentTimeMillis();
-           this.rID = user.substring(0, 2) + String.valueOf(time);
+        this.rID = user.substring(0, 2) + String.valueOf(time);
     }
     
     /**
@@ -138,8 +136,6 @@ public class ReportClass {
             *  create new node and place them under root
             */            
             NodeList nodeList = doc.getElementsByTagName(tag);
-            System.out.println("tag = " + tag);
-            System.out.println("nodeList.getLength() = " + nodeList.getLength());
             if (nodeList.getLength() > 0) {
                 System.out.println("looking for tag");
                 for (int i = 0 ; i < nodeList.getLength() ; i++) {
@@ -271,6 +267,57 @@ public class ReportClass {
     } 
     
     /**
+     * In order to clean up the report remove any nodes where the application
+     * name is blank as this cannot be used in our HTTP GET query
+     * @param xml the report file to be updated
+     */
+    public void deleteBlankNodes(String xml) {
+        try {
+            //open the XML file for edit
+            DocumentBuilderFactory dBF = DocumentBuilderFactory.newInstance();
+            DocumentBuilder dB = dBF.newDocumentBuilder();
+            Document doc = dB.parse(new File(xml));
+            
+            NodeList nodeList = doc.getElementsByTagName("Object");
+            
+            for (int i = 0; i < nodeList.getLength(); i++) { //top level
+               Node node = nodeList.item(i);
+                if (node.getNodeType() == Node.ELEMENT_NODE) { //ignore white space
+                    Element e = (Element)node;
+                    NodeList childNodeList = e.getChildNodes();
+                    if (childNodeList.getLength() > 0) { //second level
+                        Node childNode = childNodeList.item(1);
+                        if (childNode.getNodeType() == Node.ELEMENT_NODE) { //ignore white space
+                            Element eApp = (Element)childNode;
+                            Attr eAttr = eApp.getAttributeNode("Name"); 
+                            
+                            String attrLabel = eAttr.getTextContent();
+                            if (attrLabel.equals("DisplayName")) { //match on the application name
+                                String xmlAppID = eApp.getTextContent();                                
+                                if (xmlAppID.equals("") || xmlAppID.isEmpty() || xmlAppID.length() == 0) {
+                                    // this is an empty node, so we must delete it and all children
+                                    node.getParentNode().removeChild(node);
+                                }
+                            }
+                        }
+                    }
+                } 
+            }
+            Transformer tr = TransformerFactory.newInstance().newTransformer();
+            tr.setOutputProperty(OutputKeys.INDENT, "yes");
+            tr.setOutputProperty(OutputKeys.METHOD, "xml");
+            tr.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+            //tr.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, cat + ".dtd");
+            tr.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+
+            // save the changes to the file
+            tr.transform(new DOMSource(doc), new StreamResult(new FileOutputStream(xml)));
+        } catch (SAXException | IOException | ParserConfigurationException | TransformerException ex) {
+            Logger.getLogger(ReportClass.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }            
+    
+    /**
      * In order to make future read/edit of the report simpler we add a UNID to each
      * application in the report.  The UNID is a simple index as it is only used
      * within the context of the report and not beyond.
@@ -288,10 +335,11 @@ public class ReportClass {
             
             for (int i = 0; i < nodeList.getLength(); i++) {
                 Node node = nodeList.item(i);
+                
                 Integer newIDint = i + 1;
                 String newID = newIDint.toString();
                 if (node.getNodeType() == Node.ELEMENT_NODE) {  //only update non-white space nodes
-                    Element e = (Element)node;
+                    Element e = (Element)node;                    
                     NodeList childNodeList = e.getChildNodes();
                     if (childNodeList.getLength() > 0) {
                         Node childNode = childNodeList.item(0);
@@ -300,7 +348,7 @@ public class ReportClass {
                             newElement.setTextContent(newID);
                             childNode.getParentNode().insertBefore(newElement, childNode.getNextSibling());
                     }
-                }                
+                }      
             }
             Transformer tr = TransformerFactory.newInstance().newTransformer();
             tr.setOutputProperty(OutputKeys.INDENT, "yes");

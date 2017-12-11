@@ -1,9 +1,7 @@
 package appwatch;
 
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright (c) 2017 David Harrop
  */
 
 import java.io.IOException;
@@ -103,6 +101,8 @@ public class PowerShellClass {
         //later
         report.insertXML(unid, "report_ID", target);
         report.insertXML("Application Scan", "report_Stage", target);
+        report.insertXML("-", "scan_Type", target);
+        report.insertXML("-", "vul_Count", target);
         appCount = report.countApps(target);
         report.insertXML(appCount.toString(), "app_Count", target);
         return target;

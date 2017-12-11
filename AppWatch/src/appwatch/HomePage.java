@@ -1,11 +1,10 @@
 package appwatch;
 
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright (c) 2017 David Harrop
  */
 
+import java.awt.Component;
 import java.io.*;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -69,6 +68,7 @@ public class HomePage extends javax.swing.JDialog {
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         jStatusLabel = new javax.swing.JLabel();
+        delButton = new javax.swing.JButton();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu3 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
@@ -99,14 +99,14 @@ public class HomePage extends javax.swing.JDialog {
 
             },
             new String [] {
-                "Type", "Date", "Report ID"
+                "Type", "Date", "Report ID", "# Apps", "Vuln. Scan Type", "# Vuln."
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.String.class, java.lang.Long.class, java.lang.String.class
+                java.lang.String.class, java.lang.Long.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class
             };
             boolean[] canEdit = new boolean [] {
-                false, false, false
+                false, false, false, false, false, false
             };
 
             public Class getColumnClass(int columnIndex) {
@@ -131,6 +131,13 @@ public class HomePage extends javax.swing.JDialog {
         jLabel1.setOpaque(true);
         jLabel1.setRequestFocusEnabled(false);
 
+        delButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/appwatch/trash-delete.gif"))); // NOI18N
+        delButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                delButtonMouseClicked(evt);
+            }
+        });
+
         jMenu3.setText("Action");
         jMenu3.setName("actionMenu"); // NOI18N
 
@@ -154,20 +161,23 @@ public class HomePage extends javax.swing.JDialog {
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(0, 18, Short.MAX_VALUE)
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 600, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(layout.createSequentialGroup()
                         .addComponent(jLabel1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(jLabel2)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jStatusLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 247, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(jStatusLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 247, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(0, 18, Short.MAX_VALUE)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(delButton)
+                            .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 600, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addGap(24, 24, 24))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(25, 25, 25)
+                .addComponent(delButton)
+                .addGap(2, 2, 2)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 348, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -351,7 +361,7 @@ public class HomePage extends javax.swing.JDialog {
         String hashVal;
         
         if (evt.getClickCount() == 2) {
-            Object o = reportTable.getValueAt(reportTable.getSelectedRow(), 2);
+            Object o = reportTable.getModel().getValueAt(reportTable.getSelectedRow(), 2);
             report_ID = o.toString();
             filename = ps.homeDir() + File.separator + "AppWatch" + File.separator + report_ID + ".xml";
             File xml = new File(filename);
@@ -375,12 +385,16 @@ public class HomePage extends javax.swing.JDialog {
                             JOptionPane.showMessageDialog(null, "It looks like this report has been modified"
                             + " since AppWatch last saved it.  It should no longer be trusted"
                                     , "WARNING!", JOptionPane.WARNING_MESSAGE);
+                            rep.insertXML("Suspicious", "report_Stage", filename);
+                            populateTable(dir);
             }
                     } 
-                } catch (ParserConfigurationException | IOException | NoSuchAlgorithmException ex) {
+                } catch (ParserConfigurationException | IOException | NoSuchAlgorithmException | SAXException ex) {
                     Logger.getLogger(HomePage.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
+        } else {
+            jStatusLabel.setText("Row " + reportTable.getSelectedRow() + " selected");
         }
     }//GEN-LAST:event_reportTableMouseClicked
 
@@ -451,12 +465,19 @@ public class HomePage extends javax.swing.JDialog {
                 if (filename.equals("Error detected during scan")) {
                     throw new IOException("Error during PowerShell scan.");   
                 }
+                //delete any empty nodes (i.e. application is blank)
+                rep.deleteBlankNodes(filename);
+                //now add a sequential UNID to each remaining node
                 rep.addAppUNIDS(filename);
-                report = new File(filename);                
+                report = new File(filename);       
+                //retrieve the MD5 hash value of the report
                 md5Hash = rep.getHash(report);
+                //retrieve the UNID of the report
                 rID = rep.getUNIDFromFile(filename);
+                //Update the Hash List with the report UNID, for future reference
                 hash.setHash(rID, md5Hash);
                 jStatusLabel.setText("Scan complete. Report ID: " + rID);
+                //update the table to show the new report
                 populateTable(ps.homeDir() + File.separator + "AppWatch");
             }
             // if the appSearch method throws any exception, return a general error
@@ -483,6 +504,20 @@ public class HomePage extends javax.swing.JDialog {
         System.exit(0);
     }//GEN-LAST:event_formWindowClosed
 
+    private void delButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_delButtonMouseClicked
+        
+        if (reportTable.getSelectedRow() > -1) {
+            Object o = reportTable.getModel().getValueAt(reportTable.getSelectedRow(), 2);
+            String report_ID = o.toString();
+            filename = dir + report_ID + ".xml";
+            File delFile = new File(filename);
+            delFile.delete();
+            populateTable(dir);
+        } else {
+            jStatusLabel.setText("No row selected");
+        }   
+    }//GEN-LAST:event_delButtonMouseClicked
+
     /**
      * Populate the table with a list of all the reports found in the 
      * AppWatch directory.
@@ -495,11 +530,15 @@ public class HomePage extends javax.swing.JDialog {
         File[] listOfFiles = folder.listFiles();
         String rID;
         String rStage;
+        String scanType;
+        String numApps;
+        String numVul;
         Long lastMod;
         Date rDt;
         
         rep = new ReportClass();
         model = (DefaultTableModel) reportTable.getModel();
+        DefaultTableCellRenderer tcr = new DefaultTableCellRenderer();
         model.setRowCount(0);
 
         for (File report : listOfFiles) {
@@ -508,10 +547,13 @@ public class HomePage extends javax.swing.JDialog {
                     //read the report ID, report Stage and populate the table
                     rID = rep.readReport(report, "report_ID");
                     rStage = rep.readReport(report, "report_Stage");
+                    scanType = rep.readReport(report, "scan_Type");
+                    numApps = rep.readReport(report, "app_Count");
+                    numVul = rep.readReport(report, "vul_Count");
                     lastMod = report.lastModified();
                     rDt = new Date(lastMod);
                     
-                    Object[] row = {rStage, rDt, rID};
+                    Object[] row = {rStage, rDt, rID, numApps, scanType, numVul};
                     
                     model.addRow(row);
                 } catch (SAXException | IOException ex) {
@@ -523,14 +565,33 @@ public class HomePage extends javax.swing.JDialog {
         /* Now the table contains data, we format it in terms of column widths
         ** and alignments */
         TableColumn column;
-        for (int i = 0; i < 3; i++) {
-            column = reportTable.getColumnModel().getColumn(i);
-            if (i == 0) {
-                column.setMinWidth(150); 
-            } else if (i == 1) {
-                column.setMinWidth(200);
-            }
-        }
+        TableColumnModel tcm = reportTable.getColumnModel();
+        column = tcm.getColumn(2);
+        if (column.getHeaderValue().equals("Report ID")) {
+            //then this is a brand new panel and therefore columns must be
+            //adjusted
+            tcm.removeColumn(column);
+            for (int i = 0; i < 5; i++) {
+                column = tcm.getColumn(i);
+                switch (i) {
+                    case 0:
+                        column.setMinWidth(120);
+                        break;
+                    case 1:
+                        column.setMinWidth(200);
+                        break;
+                    case 3:
+                        column.setMinWidth(100);
+                        break;
+                    default:
+                        column.setMinWidth(60);                    
+                        tcr.setHorizontalAlignment(JLabel.CENTER);
+                        column.setCellRenderer(tcr);
+                        break;
+                }
+            }   
+        }        
+        
         DefaultTableCellRenderer leftAlign = new DefaultTableCellRenderer();
         leftAlign.setHorizontalAlignment(SwingConstants.LEFT);
         reportTable.getColumnModel().getColumn(1).setCellRenderer(leftAlign);
@@ -581,6 +642,7 @@ public class HomePage extends javax.swing.JDialog {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton delButton;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JMenu jMenu3;
