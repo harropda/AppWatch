@@ -1,32 +1,34 @@
 AppWatch
 National College of Ireland
 
-Higher Diploma in Science in Computing (Cybersecurity) Semester 3 Project. 
-
-The purpose of this utility is to provide users of Windows 7 or higher with a means to scan their computer for installed applications, and then scan online exploit databases for known vulnerabilties for those applications. The appprovides a report with descriptions of the vulnerabilities found and links to the Common Vulnerabilities and Exposures page for each.
-
+Higher Diploma in Science in Computing (Cybersecurity) Semester 3 Project. The purpose of this utility is to provide users of Windows 7 or higher with a means to scan their computer for installed applications, and then scan online exploit databases for known vulnerabilties for those applications, using the free Shodan API. The appprovides a report with descriptions of the vulnerabilities found and links to the Common Vulnerabilities and Exposures page for each.
 Getting Started
-
 Prerequisites
 
 Microsft Windows 7 (or later)
 
 Java JRE 1.7 (or later) https://java.com/en/
-
 Installing
-
 Application Install
 
 Download and run AppWatch.exe
-
 Development Download
 
 Clone the Appwatch/src/appwatch directory. Add this directory as a new Ppoject in your IDE
+Run
 
+When run for the first time, AppWatch creates a new directory in the Users home directory in which it stores reports and the contrl file (hashlist.xml). The new directory is
+
+    C:\Users%USERNAME%\AppWatch
+
+If you delete this directory, AppWatch will behave as if it has been newly installed.
 Built With
 
     Netbeans - Java Development IDE
 
+Contributing
+
+Please read CONTRIBUTING.md for details on our code of conduct, and the process for submitting pull requests to us.
 Authors
 
     David Harrop - All work - harropda
