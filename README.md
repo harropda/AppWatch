@@ -20,6 +20,13 @@ Download and run [AppWatch.exe](https://github.com/harropda/AppWatch/blob/master
 Clone the Appwatch/src/appwatch directory.
 Add this directory as a new Ppoject in your IDE
 
+### Run
+When run for the first time, AppWatch creates a new directory in the Users home directory in which it stores reports and the contrl file (hashlist.xml).  The new directory is
+
+* C:\Users\%USERNAME%\AppWatch
+
+If you delete this directory, AppWatch will behave as if it has been newly installed.
+
 ## Built With
 
 * [Netbeans](https://netbeans.org/) - Java Development IDE
