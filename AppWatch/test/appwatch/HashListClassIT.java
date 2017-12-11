@@ -112,6 +112,7 @@ public class HashListClassIT {
 
     /**
      * Test of setHash method, of class HashListClass.
+     * @throws java.lang.Exception
      */
     @Test
     public void testSetHash() throws Exception {

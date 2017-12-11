@@ -46,5 +46,17 @@ public class PasswordUIIT {
         String[] args = null;
         PasswordUI.main(args);
     }
+
+    /**
+     * Test of verifyPasswords method, of class PasswordUI.
+     */
+    @Test
+    public void testVerifyPasswords() {
+        System.out.println("verifyPasswords");
+        PasswordUI instance = new PasswordUI(new java.awt.Frame(), true, "new");
+        boolean expResult = false;
+        boolean result = instance.verifyPasswords();
+        assertEquals(expResult, result);
+    }
     
 }

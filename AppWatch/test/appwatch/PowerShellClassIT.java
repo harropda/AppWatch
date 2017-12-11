@@ -54,7 +54,7 @@ public class PowerShellClassIT {
     public void testSetAppDir() {
         System.out.println("setAppDir");
         PowerShellClass instance = new PowerShellClass();
-        String expResult = "C:\\Users\\IBM_ADMIN\\AppWatch";
+        String expResult = "C:\\Users\\IBM_ADMIN\\AppWatch\\";
         String result = instance.setAppDir();
         assertEquals(expResult, result);
     }
@@ -66,7 +66,7 @@ public class PowerShellClassIT {
     public void testGetAppDir() {
         System.out.println("getAppDir");
         PowerShellClass instance = new PowerShellClass();
-        String expResult = "C:\\Users\\IBM_ADMIN\\AppWatch";
+        String expResult = "C:\\Users\\IBM_ADMIN\\AppWatch\\";
         String result = instance.getAppDir();
         assertEquals(expResult, result);
     }
@@ -104,7 +104,7 @@ public class PowerShellClassIT {
     public void testDirMake() throws Exception {
         System.out.println("dirMake");
         String homeDir = "C:\\Users\\IBM_ADMIN\\AppWatch";
-        boolean expResult = true;
+        boolean expResult = false;
         boolean result = PowerShellClass.dirMake(homeDir);
         assertEquals(expResult, result);
     }
@@ -116,7 +116,7 @@ public class PowerShellClassIT {
     public void testHomeDir() {
         System.out.println("homeDir");
         PowerShellClass instance = new PowerShellClass();
-        String expResult = "C:\\Users\\IBM_ADMIN\\";
+        String expResult = "C:\\Users\\IBM_ADMIN";
         String result = instance.homeDir();
         assertEquals(expResult, result);
     }    

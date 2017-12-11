@@ -63,7 +63,8 @@ public class ReportClassIT {
     public void testGetReportID() {
         System.out.println("getReportID");
         ReportClass instance = new ReportClass();
-        String expResult = "Da1512417889465";
+        String expResult = null;
+        testSetReportID();
         String result = instance.getReportID();
         assertEquals(expResult, result);
     }
@@ -74,9 +75,9 @@ public class ReportClassIT {
     @Test
     public void testGetUNIDFromFile() {
         System.out.println("getUNIDFromFile");
-        String filename = "C:\\Users\\IBM_ADMIN\\AppWatch\\Da1512417889465.xml";
+        String filename = "C:\\Users\\IBM_ADMIN\\AppWatch\\Da1513009865691.xml";
         ReportClass instance = new ReportClass();
-        String expResult = "1512417889465";
+        String expResult = "1513009865691";
         String result = instance.getUNIDFromFile(filename);
         assertEquals(expResult, result);
     }
@@ -88,10 +89,10 @@ public class ReportClassIT {
     @Test
     public void testReadReport() throws Exception {
         System.out.println("readReport");
-        File xml = new File("C:\\Users\\IBM_ADMIN\\AppWatch\\Da1512417889465.xml");
+        File xml = new File("C:\\Users\\IBM_ADMIN\\AppWatch\\Da1513009865691.xml");
         String tag = "report_ID";
         ReportClass instance = new ReportClass();
-        String expResult = "Da1512417889465";
+        String expResult = "Da1513009865691";
         String result = instance.readReport(xml, tag);
         assertEquals(expResult, result);
     }
@@ -103,8 +104,8 @@ public class ReportClassIT {
     @Test
     public void testValidateHash() throws Exception {
         System.out.println("validateHash");
-        String rID = "Da1512417889465";
-        String hashVal = "235acf2899f425b8bbcd6001cdfd73ba";
+        String rID = "Da1513009865691";
+        String hashVal = "9d590e5a9a63a78e73179766c7afbd71";
         ReportClass instance = new ReportClass();
         boolean expResult = false;
         boolean result = instance.validateHash(rID, hashVal);
@@ -118,9 +119,9 @@ public class ReportClassIT {
     @Test
     public void testGetHash() throws Exception {
         System.out.println("getHash");
-        File file = new File("C:\\Users\\IBM_ADMIN\\AppWatch\\Da1512417889465.xml");
+        File file = new File("C:\\Users\\IBM_ADMIN\\AppWatch\\Da1513009865691.xml");
         ReportClass instance = new ReportClass();
-        String expResult = "235acf2899f425b8bbcd6001cdfd73ba";
+        String expResult = "9d590e5a9a63a78e73179766c7afbd71";
         String result = instance.getHash(file);
         assertEquals(expResult, result);
     }
@@ -132,7 +133,7 @@ public class ReportClassIT {
     @Test
     public void testOpenReport() throws Exception {
         System.out.println("openReport");
-        String rID = "Da1512417889465";
+        String rID = "Da1513009865691";
         ReportClass instance = new ReportClass();
         instance.openReport(rID);
     }
@@ -143,9 +144,9 @@ public class ReportClassIT {
     @Test
     public void testCountApps() {
         System.out.println("countApps");
-        String xml = "C:\\Users\\IBM_ADMIN\\AppWatch\\Da1512417889465.xml";
+        String xml = "C:\\Users\\IBM_ADMIN\\AppWatch\\Da1513009865691.xml";
         ReportClass instance = new ReportClass();
-        Integer expResult = 120;
+        Integer expResult = 82;
         Integer result = instance.countApps(xml);
         assertEquals(expResult, result);
     }
@@ -159,7 +160,7 @@ public class ReportClassIT {
         System.out.println("insertXML");
         String val = "success";
         String tag = "test";
-        String xml = "C:\\Users\\IBM_ADMIN\\AppWatch\\Da1512417889465.xml";
+        String xml = "C:\\Users\\IBM_ADMIN\\AppWatch\\Da1513009865691.xml";
         ReportClass instance = new ReportClass();
         instance.insertXML(val, tag, xml);
     }
@@ -170,7 +171,7 @@ public class ReportClassIT {
     @Test
     public void testAddAppUNIDS() {
         System.out.println("addAppUNIDS");
-        String xml = "C:\\Users\\IBM_ADMIN\\AppWatch\\Da1512417889465.xml";
+        String xml = "C:\\Users\\IBM_ADMIN\\AppWatch\\Da1513009865691.xml";
         ReportClass instance = new ReportClass();
         instance.addAppUNIDS(xml);
     }
@@ -181,7 +182,7 @@ public class ReportClassIT {
     @Test
     public void testAddVResult() {
         System.out.println("addVResult");
-        String filename = "C:\\Users\\IBM_ADMIN\\AppWatch\\Da1512417889465.xml";
+        String filename = "C:\\Users\\IBM_ADMIN\\AppWatch\\Da1513009865691.xml";
         Integer sequence = 1;
         String appID = "1";
         String cve = "100";
@@ -190,6 +191,30 @@ public class ReportClassIT {
         Integer appVulCount = 1;
         ReportClass instance = new ReportClass();
         instance.addVResult(filename, sequence, appID, cve, description, source, appVulCount);
+    }
+
+    /**
+     * Test of deleteBlankNodes method, of class ReportClass.
+     */
+    @Test
+    public void testDeleteBlankNodes() {
+        System.out.println("deleteBlankNodes");
+        String xml = "C:\\Users\\IBM_ADMIN\\AppWatch\\Da1513009865691.xml";
+        ReportClass instance = new ReportClass();
+        instance.deleteBlankNodes(xml);
+    }
+
+    /**
+     * Test of generateCVEURL method, of class ReportClass.
+     */
+    @Test
+    public void testGenerateCVEURL() {
+        System.out.println("generateCVEURL");
+        String cve = "[CVE-2001-0001],[2001-0002]";
+        ReportClass instance = new ReportClass();
+        String expResult = "https://www.cvedetails.com/cve/CVE-2001-0001/";
+        String result = instance.generateCVEURL(cve);
+        assertEquals(expResult, result);
     }
     
 }
