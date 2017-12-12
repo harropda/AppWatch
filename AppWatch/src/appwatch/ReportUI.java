@@ -92,14 +92,14 @@ public class ReportUI extends javax.swing.JDialog {
         ps = new PowerShellClass();
         rep = new ReportClass();
         this.reportID = rID;
-        repID.setText(rID);
+        rIDValue.setText(rID);
         this.filename = ps.homeDir() + File.separator + "AppWatch" + File.separator + reportID + ".xml";
         this.xml = new File(filename);
         
         //We have the report id, now retrieve the date and number of applications from it
         //display those values in UI
-        repNumApps.setText(rep.readReport(xml, "app_Count"));
-        vulFound.setText(rep.readReport(xml, "vul_Count"));
+        numAppsValue.setText(rep.readReport(xml, "app_Count"));
+        numVulValue.setText(rep.readReport(xml, "vul_Count"));
         if (rep.readReport(xml, "report_Stage").equals("Vulnerability Scan")) {
             //scan already done, just permit read
             scanDone = true;
@@ -108,7 +108,7 @@ public class ReportUI extends javax.swing.JDialog {
         lastMod = xml.lastModified();
         rDt = new Date(lastMod);
         this.date = rDt.toString();
-        repDate.setText(date);
+        rDtValue.setText(date);
         populateTable();
     }
 
@@ -190,7 +190,7 @@ public class ReportUI extends javax.swing.JDialog {
         }          
         //update the UI with aggregate data from report
         try {
-            vulFound.setText(rep.readReport(xml, "vul_Count"));
+            numVulValue.setText(rep.readReport(xml, "vul_Count"));
         } catch (SAXException | IOException ex) {
             Logger.getLogger(ReportUI.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -201,13 +201,25 @@ public class ReportUI extends javax.swing.JDialog {
         TableColumn column;
         for (int i = 0; i < 4; i++) {
             column = appTable.getColumnModel().getColumn(i);
-            if (i == 0) {
-                column.setMaxWidth(35);
-                column.setMinWidth(35);
-            } else if (i == 2) {
-                column.setMinWidth(150); 
-            } else if (i < 4) {
-                column.setMinWidth(200); 
+            switch (i) {
+                case 1:
+                    column.setMinWidth(150);
+                    break;
+                case 2:
+                    column.setMaxWidth(75);
+                    column.setMinWidth(75);
+                    break;
+                case 3:
+                    column.setMinWidth(125);
+                    break;
+                case 4:
+                    column.setMaxWidth(90);
+                    column.setMinWidth(90);
+                    break;
+                default:
+                    column.setMaxWidth(35);
+                    column.setMinWidth(35);
+                    break;
             }
         }
     }
@@ -226,12 +238,12 @@ public class ReportUI extends javax.swing.JDialog {
         repDateLabel = new javax.swing.JLabel();
         repNumAppsLabel = new javax.swing.JLabel();
         vulFoundLabel = new javax.swing.JLabel();
-        repID = new javax.swing.JTextField();
-        repDate = new javax.swing.JTextField();
-        repNumApps = new javax.swing.JTextField();
-        vulFound = new javax.swing.JTextField();
         status = new javax.swing.JLabel();
         useVersionNum = new javax.swing.JCheckBox();
+        rIDValue = new javax.swing.JLabel();
+        rDtValue = new javax.swing.JLabel();
+        numAppsValue = new javax.swing.JLabel();
+        numVulValue = new javax.swing.JLabel();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
@@ -280,36 +292,25 @@ public class ReportUI extends javax.swing.JDialog {
 
         vulFoundLabel.setText("Number of Vulnerabilities found: ");
 
-        repID.setEditable(false);
-        repID.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        repID.setText("...");
-        repID.setBorder(null);
-        repID.setOpaque(false);
-        repID.setSelectedTextColor(new java.awt.Color(240, 240, 240));
-
-        repDate.setEditable(false);
-        repDate.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        repDate.setText("...");
-        repDate.setBorder(null);
-        repDate.setOpaque(false);
-
-        repNumApps.setEditable(false);
-        repNumApps.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        repNumApps.setText("...");
-        repNumApps.setBorder(null);
-        repNumApps.setOpaque(false);
-
-        vulFound.setEditable(false);
-        vulFound.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        vulFound.setText("...");
-        vulFound.setBorder(null);
-        vulFound.setOpaque(false);
-
         status.setFont(new java.awt.Font("Tahoma", 0, 10)); // NOI18N
 
         useVersionNum.setText("Ignore Version Number when scanning");
         useVersionNum.setToolTipText("Enabling this setting ignores the version number for each application.  The Vulnerability Scan is performed on the application name only");
         useVersionNum.setBorder(null);
+
+        rIDValue.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        rIDValue.setText("...");
+        rIDValue.setMaximumSize(new java.awt.Dimension(999, 14));
+
+        rDtValue.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        rDtValue.setText("...");
+        rDtValue.setMaximumSize(new java.awt.Dimension(999, 14));
+
+        numAppsValue.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        numAppsValue.setText("...");
+
+        numVulValue.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        numVulValue.setText("...");
 
         jMenu1.setText("Action");
 
@@ -330,58 +331,61 @@ public class ReportUI extends javax.swing.JDialog {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 1084, Short.MAX_VALUE)
             .addGroup(layout.createSequentialGroup()
-                .addGap(22, 22, 22)
+                .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(status)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(useVersionNum)
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(status))
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 735, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(repIDLabel)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(repID, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(repDateLabel)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(repDate, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(176, 176, 176)
-                        .addComponent(repNumAppsLabel)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(repNumApps, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(57, 57, 57)
-                        .addComponent(vulFoundLabel)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(vulFound, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(203, 203, 203))))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(repDateLabel)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(rDtValue, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(repIDLabel)
+                                .addGap(18, 18, 18)
+                                .addComponent(rIDValue, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(209, 209, 209)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(vulFoundLabel)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(numVulValue))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(repNumAppsLabel)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(numAppsValue)))))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(repIDLabel)
-                        .addComponent(repID, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(repNumAppsLabel)
-                        .addComponent(repNumApps, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(vulFoundLabel)
-                        .addComponent(vulFound, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(repDateLabel)
-                        .addComponent(repDate, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(numAppsValue))
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(repIDLabel)
+                        .addComponent(rIDValue, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(4, 4, 4)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(25, 25, 25)
-                        .addComponent(status))
-                    .addGroup(layout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(useVersionNum)))
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(repDateLabel)
+                        .addComponent(rDtValue, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(vulFoundLabel)
+                        .addComponent(numVulValue)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 448, Short.MAX_VALUE)
-                .addContainerGap())
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(status)
+                    .addComponent(useVersionNum))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 445, Short.MAX_VALUE)
+                .addGap(12, 12, 12))
         );
 
         pack();
@@ -478,14 +482,18 @@ public class ReportUI extends javax.swing.JDialog {
             Logger.getLogger(ReportUI.class.getName()).log(Level.SEVERE, null, ex);
         }  
         status.setText("Scan complete");
-        vulFound.setText(totalVuls.toString());
+        numVulValue.setText(totalVuls.toString());
         populateTable();
         JOptionPane.showMessageDialog(null, "Finished searching for vulnerabilities for " + lastrow + " applications."
                                     , "Scan status", JOptionPane.INFORMATION_MESSAGE);
     }//GEN-LAST:event_jMenuItem1ActionPerformed
 
     /**
-     * 
+     * When triggered, a loop that cycles through each table row (representing an
+     * application) is processed through this method.  It forms the GET query, 
+     * triggers the HTTP connection and processes the returned JSON stream into
+     * the XML report by calling the Report class addVResult method.
+     * Also identifies a problem with the host internet connection.
      * @param r Row number from table identifying application to scan for
      * @return true or false, indicating success of scanning for 
      * vulnerabilities for the app in question
@@ -648,15 +656,15 @@ public class ReportUI extends javax.swing.JDialog {
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTextField repDate;
+    private javax.swing.JLabel numAppsValue;
+    private javax.swing.JLabel numVulValue;
+    private javax.swing.JLabel rDtValue;
+    private javax.swing.JLabel rIDValue;
     private javax.swing.JLabel repDateLabel;
-    private javax.swing.JTextField repID;
     public javax.swing.JLabel repIDLabel;
-    private javax.swing.JTextField repNumApps;
     private javax.swing.JLabel repNumAppsLabel;
     private javax.swing.JLabel status;
     private javax.swing.JCheckBox useVersionNum;
-    private javax.swing.JTextField vulFound;
     private javax.swing.JLabel vulFoundLabel;
     // End of variables declaration//GEN-END:variables
 

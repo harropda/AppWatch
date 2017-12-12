@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.xml.sax.SAXException;
@@ -74,7 +76,13 @@ public class PowerShellClass {
         //set the report file as target
         String target = getAppDir() + unid + ".xml";        
         String targetQ = quotes + target + quotes;
-        String command = "powershell.exe  (Get-ItemProperty HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Select-Object DisplayName, DisplayVersion, Publisher | ConvertTo-XML –NoTypeInformation).Save("+ targetQ + ")";
+        String arch6432 = checkForKey();
+        String command;
+        if (arch6432.equals("64")) {
+            command = "powershell.exe  (Get-ItemProperty HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Select-Object DisplayName, DisplayVersion, Publisher | ConvertTo-XML –NoTypeInformation).Save("+ targetQ + ")";
+        } else {
+            command = "powershell.exe  (Get-ItemProperty HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Select-Object DisplayName, DisplayVersion, Publisher | ConvertTo-XML –NoTypeInformation).Save("+ targetQ + ")";
+        }
         String line;
         // Executing the command
         Process powerShellProcess = Runtime.getRuntime().exec(command);
@@ -106,6 +114,28 @@ public class PowerShellClass {
         appCount = report.countApps(target);
         report.insertXML(appCount.toString(), "app_Count", target);
         return target;
+    }
+    
+    /**
+     * Not all Windows instances have the WOW6432 registry key (32-bit instances)
+     * so we need to check for its existence before attempting to read a list
+     * of installed applications from it
+     * @return the 
+     */
+    public String checkForKey(){
+        String retValue = "0";
+        try {
+            List<String> regValue = WinRegistry.readStringSubKeys(0x80000002, "SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall");
+            if(regValue == null){
+                retValue = "32";
+            } else {
+                retValue = "64";
+            }
+        } catch (IllegalArgumentException | IllegalAccessException | InvocationTargetException ex) {
+            System.err.println(ex);
+        }
+        System.out.println("Found " + retValue + " reg key");
+        return retValue;
     }
     
     /**

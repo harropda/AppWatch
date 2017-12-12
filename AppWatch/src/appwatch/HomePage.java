@@ -167,10 +167,10 @@ public class HomePage extends javax.swing.JDialog {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(jStatusLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 247, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(0, 18, Short.MAX_VALUE)
+                        .addGap(0, 24, Short.MAX_VALUE)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                             .addComponent(delButton)
-                            .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 600, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                            .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 821, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addGap(24, 24, 24))
         );
         layout.setVerticalGroup(
@@ -352,52 +352,60 @@ public class HomePage extends javax.swing.JDialog {
     }
     
     /** 
-     * When the table is double-clicked, open the report at the mouse cursor.
-     * Before opening the report, we must first validate it's integrity by 
-     * comparing it's MD5 hash value to that stored in the Hash List.
+     * When the table is double-clicked, locate the report ID column value and
+     * call the openSelectedReport method.
     */
     private void reportTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_reportTableMouseClicked
-        String report_ID;
-        String hashVal;
-        
+              
         if (evt.getClickCount() == 2) {
-            Object o = reportTable.getModel().getValueAt(reportTable.getSelectedRow(), 2);
-            report_ID = o.toString();
-            filename = ps.homeDir() + File.separator + "AppWatch" + File.separator + report_ID + ".xml";
-            File xml = new File(filename);
-            if (report_ID.equals("")) {
-                // a row without a Report ID value has been clicked, can't do anything
-                jStatusLabel.setText("Invalid selection");
-            } else {
-                try {
-                    //we have a report ID, now we must open and display the report contents
-                    //Verify the MD5 Hash value of the report
-                    hashVal = rep.getHash(xml);
-                    System.out.println("hashVal = " + hashVal);
-                    if (hashVal != null) {
-                        boolean validated = rep.validateHash(rep.getUNIDFromFile(filename), hashVal);
-                        if (validated == true) {
-                            //MD5 hash values match, so the report integrity is valid
-                            rep.openReport(report_ID);
-                        } else {
-                            //This report has been edited outside of AppWatch since
-                            //it was last edited by the application.  We cannot trust it.
-                            JOptionPane.showMessageDialog(null, "It looks like this report has been modified"
-                            + " since AppWatch last saved it.  It should no longer be trusted"
-                                    , "WARNING!", JOptionPane.WARNING_MESSAGE);
-                            rep.insertXML("Suspicious", "report_Stage", filename);
-                            populateTable(dir);
-            }
-                    } 
-                } catch (ParserConfigurationException | IOException | NoSuchAlgorithmException | SAXException ex) {
-                    Logger.getLogger(HomePage.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
+            Object o = reportTable.getValueAt(reportTable.getSelectedRow(), 2);
+            openSelectedReport(o);
         } else {
             jStatusLabel.setText("Row " + reportTable.getSelectedRow() + " selected");
         }
     }//GEN-LAST:event_reportTableMouseClicked
 
+    /**
+     * Open the report at the mouse cursor.
+     * Before opening the report, we must first validate it's integrity by 
+     * comparing it's MD5 hash value to that stored in the Hash List.     * 
+     */
+    public void openSelectedReport(Object o) {
+        String report_ID;
+        String hashVal;        
+        report_ID = o.toString();
+        filename = ps.homeDir() + File.separator + "AppWatch" + File.separator + report_ID + ".xml";
+        File xml = new File(filename);
+        if (report_ID.equals("")) {
+            // a row without a Report ID value has been clicked, can't do anything
+            jStatusLabel.setText("Invalid selection");
+        } else {
+            try {
+                //we have a report ID, now we must open and display the report contents
+                //Verify the MD5 Hash value of the report
+                hashVal = rep.getHash(xml);
+                System.out.println("hashVal = " + hashVal);
+                if (hashVal != null) {
+                    boolean validated = rep.validateHash(rep.getUNIDFromFile(filename), hashVal);
+                    if (validated == true) {
+                        //MD5 hash values match, so the report integrity is valid
+                        rep.openReport(report_ID);
+                    } else {
+                        //This report has been edited outside of AppWatch since
+                        //it was last edited by the application.  We cannot trust it.
+                        JOptionPane.showMessageDialog(null, "It looks like this report has been modified"
+                        + " since AppWatch last saved it.  It should no longer be trusted"
+                                , "WARNING!", JOptionPane.WARNING_MESSAGE);
+                        rep.insertXML("Suspicious", "report_Stage", filename);
+                        populateTable(dir);
+        }
+                } 
+            } catch (ParserConfigurationException | IOException | NoSuchAlgorithmException | SAXException ex) {
+                Logger.getLogger(HomePage.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+    
     /**
      * When closing the application we need to encrypt the Hash List and then delete
     *  the unencrypted file.  This ensures that only AppWatch can edit the Hash List
@@ -416,16 +424,22 @@ public class HomePage extends javax.swing.JDialog {
             Logger.getLogger(HomePage.class.getName()).log(Level.SEVERE, null, ex);
         }
     }//GEN-LAST:event_formWindowClosing
-
+    /**
+    * The button calls the method that scans the local system for applications
+    */
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
-        /*
-        * The button executes a new scan for locally installed applications.
-        * As the scan results are written to the default application directory
-        * we must first ensure that the directory exists.  
-        * If it does not, then it will be created.
-        * Only if the default application directory exists will the scan be
-        * initiated.
-        */
+        scanForApps();        
+    }//GEN-LAST:event_jMenuItem1ActionPerformed
+
+    /**
+     * Executes a new scan for locally installed applications.
+     * As the scan results are written to the default application directory
+     * we must first ensure that the directory exists.  
+     * If it does not, then it will be created.
+     * Only if the default application directory exists will the scan be
+     * initiated.
+     */
+    public void scanForApps() {
         boolean dirFound;
         boolean dirMade = true;
         String md5Hash;
@@ -485,8 +499,8 @@ public class HomePage extends javax.swing.JDialog {
                 Logger.getLogger(HomePage.class.getName()).log(Level.SEVERE, null, ex);     
             }
         }
-    }//GEN-LAST:event_jMenuItem1ActionPerformed
-
+    }
+    
     /**
      * When we close child windows and return to HomePage, refresh the table
      * contents in case changes have been made to reports
@@ -503,7 +517,12 @@ public class HomePage extends javax.swing.JDialog {
     private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
         System.exit(0);
     }//GEN-LAST:event_formWindowClosed
-
+    
+    /**
+     * Provides functionality permitting the user to delete a report from the
+     * presented list.
+     * @param evt 
+     */
     private void delButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_delButtonMouseClicked
         
         if (reportTable.getSelectedRow() > -1) {
@@ -511,7 +530,9 @@ public class HomePage extends javax.swing.JDialog {
             String report_ID = o.toString();
             filename = dir + report_ID + ".xml";
             File delFile = new File(filename);
-            delFile.delete();
+            if (delFile.delete()) {
+                jStatusLabel.setText(filename + " deleted");
+            }            
             populateTable(dir);
         } else {
             jStatusLabel.setText("No row selected");
@@ -566,31 +587,41 @@ public class HomePage extends javax.swing.JDialog {
         ** and alignments */
         TableColumn column;
         TableColumnModel tcm = reportTable.getColumnModel();
-        column = tcm.getColumn(2);
-        if (column.getHeaderValue().equals("Report ID")) {
-            //then this is a brand new panel and therefore columns must be
-            //adjusted
-            tcm.removeColumn(column);
-            for (int i = 0; i < 5; i++) {
-                column = tcm.getColumn(i);
-                switch (i) {
-                    case 0:
-                        column.setMinWidth(120);
-                        break;
-                    case 1:
-                        column.setMinWidth(200);
-                        break;
-                    case 3:
-                        column.setMinWidth(100);
-                        break;
-                    default:
-                        column.setMinWidth(60);                    
-                        tcr.setHorizontalAlignment(JLabel.CENTER);
-                        column.setCellRenderer(tcr);
-                        break;
-                }
-            }   
-        }        
+       
+        for (int i = 0; i < 6; i++) {
+            column = tcm.getColumn(i);
+            switch (i) {
+                case 0:
+                    column.setMinWidth(120);
+                    break;
+                case 1:
+                    column.setMinWidth(180);
+                    break;
+                case 2:
+                    column.setMinWidth(100);
+                    break;
+                case 3:
+                    column.setMaxWidth(60);
+                    column.setMinWidth(60);
+                    tcr.setHorizontalAlignment(JLabel.CENTER);
+                    column.setCellRenderer(tcr);
+                    break;
+                case 4:
+                    column.setMinWidth(120);                        
+                    break;
+                case 5:
+                    column.setMaxWidth(60);
+                    column.setMinWidth(60);
+                    tcr.setHorizontalAlignment(JLabel.CENTER);
+                    column.setCellRenderer(tcr);
+                    break;
+                default:
+                    column.setMinWidth(60);                    
+                    tcr.setHorizontalAlignment(JLabel.CENTER);
+                    column.setCellRenderer(tcr);
+                    break;
+            }
+        }
         
         DefaultTableCellRenderer leftAlign = new DefaultTableCellRenderer();
         leftAlign.setHorizontalAlignment(SwingConstants.LEFT);

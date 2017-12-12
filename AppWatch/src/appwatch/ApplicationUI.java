@@ -58,6 +58,7 @@ public final class ApplicationUI extends javax.swing.JDialog {
     public ApplicationUI(java.awt.Frame parent, boolean modal, File xml, String appID, String product, String version, String repDate) {
         super(parent, modal);
         initComponents();
+        setLocationRelativeTo(null); //central position
         this.product = product;
         this.version = version;
         this.repDate = repDate;
